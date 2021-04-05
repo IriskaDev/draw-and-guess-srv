@@ -1,3 +1,5 @@
 {
-    "python.pythonPath": "."
+    "python.pythonPath": "c:\\python39\\python.exe",
+    // "python.pythonPath": "./",
+    "python.autoComplete.extraPaths": ["${workspace}/", "./"]
 }

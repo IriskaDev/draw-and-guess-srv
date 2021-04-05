@@ -1,6 +1,6 @@
 from config_manager import configmgr
 from singleton import singleton
-from worker import worker
+import worker
 
 @singleton
 class sometestcls:
@@ -8,8 +8,6 @@ class sometestcls:
         pass
 
 if __name__ == "__main__":
-    # configmgr().read("./config.json")
-    # print(configmgr().getport())
-    worker().start()
+    worker.start()
 
 

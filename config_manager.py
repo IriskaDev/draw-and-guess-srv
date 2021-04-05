@@ -1,6 +1,6 @@
 
-from singleton import singleton
 import json
+from singleton import singleton
 
 
 @singleton
@@ -10,7 +10,6 @@ class configmgr:
     def __init__(self):
         pass
 
-    @classmethod
     def read(self, path):
         f = open(path, 'r')
         self.dataobj = json.load(f)
@@ -20,5 +19,10 @@ class configmgr:
         if self.dataobj is None:
             return 0
         return self.dataobj['srv-port']
+
+    def getip(self):
+        if self.dataobj is None:
+            return "localhost"
+        return self.dataobj['srv-ip']
 
 
