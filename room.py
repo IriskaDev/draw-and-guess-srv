@@ -1,10 +1,14 @@
 
-class Room:
+class room:
 
     def __init__(self):
+        self.id = 0
+        self.pwd = ""
         self.host = None
         self.players = set()
         self.viewers = set()
+        self.maxplayers = 0
+        self.maxviewers = 0
         self.answer = None
         self.history = []
     
@@ -29,4 +33,16 @@ class Room:
         self.sendhistorydraws(viewer)
 
     def sendhistorydraws(self, client):
+        pass
+
+    def set_answer(self, answer):
+        pass
+
+    def set_pwd(self, pwd):
+        pass
+
+    def client_exit(self, client):
+        pass
+
+    def room_close(self):
         pass

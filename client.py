@@ -1,4 +1,6 @@
 
-class Client:
-    def __init__(self):
-        pass
+class client:
+    def __init__(self, socket):
+        self.ws = socket
+        self.nickname = None
+        self.room = None
