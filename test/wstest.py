@@ -27,9 +27,6 @@ async def communicate(ws, msg):
         await ws.send(msg)
         await asyncio.sleep(5)
 
-async def stop():
-    task.cancel()
-
 if __name__ == "__main__":
     # url = "ws://127.0.0.1:12013"
     # ws = websockets.connect(url, ping_interval=10)

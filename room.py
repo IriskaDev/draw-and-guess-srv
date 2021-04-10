@@ -5,6 +5,7 @@ class room:
         self.id = 0
         self.pwd = ""
         self.host = None
+        self.name = ""
         self.players = set()
         self.viewers = set()
         self.maxplayers = 0

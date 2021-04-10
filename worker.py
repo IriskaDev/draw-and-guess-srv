@@ -12,12 +12,12 @@ CLIENTS = dict()
 # id - room
 ROOMS = dict()
 
-async def register(ws):
+async def onconnected(ws):
     print('register ws: ', ws)
     c = client(ws)
     CLIENTS[ws] = c
 
-async def unreister(ws):
+async def ondisconnected(ws):
     print('unregister ws: ', ws)
     c = CLIENTS[ws]
     if c.room is not None:
@@ -26,15 +26,21 @@ async def unreister(ws):
 
     del CLIENTS[ws]
 
+async def onmessage(ws, msg):
+    c = CLIENTS[ws]
+    print('onmessage:\n ', c, "\n", msg)
+    await ws.send(msg)
+
 async def handler(ws, uri):
-    await register(ws)
+    await onconnected(ws)
     try:
         while True:
             msg = await ws.recv()
-            print('msg from client: ', msg)
-            await ws.send(msg)
+            await onmessage(ws, msg)
+            # print('msg from client: ', msg)
+            # await ws.send(msg)
     finally:
-        await unreister(ws)
+        await ondisconnected(ws)
 
 def start():
     configmgr().read('./config.json')
