@@ -12,6 +12,14 @@ CLIENTS = dict()
 # id - room
 ROOMS = dict()
 
+# sorted rooms
+# only used in generating room list for client
+# when ROOMS updated, use code below to generate SORTED_ROOMS
+# SORTED_ROOMS = sorted(ROOMS.items(), key=lambda x: x[0])
+# after sorted, we get a list which contains values as shown below
+# [(key, value), (key, value), ...]
+SORTED_ROOMS = []
+
 async def onconnected(ws):
     print('register ws: ', ws)
     c = client(ws)
@@ -37,8 +45,6 @@ async def handler(ws, uri):
         while True:
             msg = await ws.recv()
             await onmessage(ws, msg)
-            # print('msg from client: ', msg)
-            # await ws.send(msg)
     finally:
         await ondisconnected(ws)
 
