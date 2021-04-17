@@ -30,6 +30,15 @@ def updatesortedroom():
     SORTED_ROOMS.clear()
     SORTED_ROOMS.extend(sorted(ROOMS.items(), key=lambda x: x[0]))
 
+async def broadcastmsg(clientlist, msg):
+    for c in clientlist:
+        try:
+            await c.ws.send(msg)
+        except websockets.exceptions.ConnectionClosed:
+            ondisconnected(c.ws, False)
+        except:
+            pass
+
 async def onregister(c, req):
     if 'NAME' not in req:
         await c.ws.send(respassembler.get_resp_register(1))
@@ -156,20 +165,12 @@ async def quitroom(c, req):
         return
     
     if c == r.host:
-        for i in r.viewers:
-            try:
-                await i.ws.send(respassembler.get_resp_quit_room(0))
-            except websockets.exceptions.ConnectionClosed:
-                ondisconnected(i.ws, False)
-            except:
-                pass
-        for i in r.players:
-            try:
-                await i.ws.send(respassembler.get_resp_quit_room(0))
-            except websockets.exceptions.ConnectionClosed:
-                ondisconnected(i.ws, False)
-            except:
-                pass
+        for viewer in r.viewers:
+            viewer.room = None
+        await broadcastmsg(r.viewers, respassembler.get_resp_quit_room(0))
+        for player in r.players:
+            player.room = None
+        await broadcastmsg(r.players, respassembler.get_resp_quit_room(0))
         # delete room here
         del ROOMS[c.room]
         updatesortedroom()
@@ -212,20 +213,12 @@ async def ondisconnected(ws, quitroom=True):
             r = ROOMS[c.room]
             if r.host == c:
                 # need to delete room and notify players and viewers in the room
-                for i in r.viewers:
-                    try:
-                        await i.ws.send(respassembler.get_resp_quit_room(0))
-                    except websockets.exceptions.ConnectionClosed:
-                        ondisconnected(i.ws, False)
-                    except:
-                        pass
-                for i in r.players:
-                    try:
-                        await i.ws.send(respassembler.get_resp_quit_room(0))
-                    except websockets.exceptions.ConnectionClosed:
-                        ondisconnected(i.ws, False)
-                    except:
-                        pass
+                for viewer in r.viewers:
+                    viewer.room = None
+                await broadcastmsg(r.viewers, respassembler.get_resp_quit_room(0))
+                for player in r.players:
+                    player.room = None
+                await broadcastmsg(r.players, respassembler.get_resp_quit_room(0))
                 del ROOMS[c.room]
                 updatesortedroom()
             else:
