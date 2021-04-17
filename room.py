@@ -62,7 +62,7 @@ class room:
         # don't do it here, do it outside
         # self.sendhistorydraws(player)
 
-    async def joinasviewer(self, viewer):
+    def joinasviewer(self, viewer):
         if viewer in self.viewers:
             return
         if viewer in self.players:
