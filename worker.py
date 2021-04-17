@@ -13,6 +13,7 @@ from client import client
 
 # ws - client
 CLIENTS = dict()
+NAMES = set()
 # id - room
 ROOMS = dict()
 
@@ -32,6 +33,10 @@ def updatesortedroom():
 async def onregister(c, req):
     if 'NAME' not in req:
         await c.ws.send(respassembler.get_resp_register(1))
+        return
+
+    if req['NAME'] in NAMES:
+        await c.ws.send(respassembler.get_resp_register(2))
         return
 
     c.nickname = req['NAME']
@@ -200,8 +205,9 @@ async def ondisconnected(ws, quitroom=True):
     print('unregister ws: ', ws)
     if ws not in CLIENTS:
         return
+    c = CLIENTS[ws]
+    NAMES.remove(c.nickname)
     if quitroom:
-        c = CLIENTS[ws]
         if c.room is not None:
             r = ROOMS[c.room]
             if r.host == c:
@@ -231,8 +237,8 @@ async def onmessage(ws, msg):
     print(ws, msg)
     try:
         c = CLIENTS[ws]
-        if c.nickname is not None:
-            print(c.nickname)
+        # if c.nickname is not None:
+            # print(c.nickname)
         req = json.loads(msg)
         if type(req['PROTO']) is not str:
             raise Exception('PROTO not found in incoming message')
