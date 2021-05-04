@@ -5,12 +5,12 @@ async def hello():
     uri = "ws://127.0.0.1:12013"
     async with websockets.connect(uri, ping_interval=10) as ws:
         while True:
-            # msg = input('send message: \n')
-            msg = 'client2msg'
+            msg = input('send message: \n')
+            # msg = 'client2msg'
             await ws.send(msg)
             recvmsg = await ws.recv()
             print ('recv msg: ', recvmsg)
-            await asyncio.sleep(5)
+            # await asyncio.sleep(5)
 
         # greeting = input('send greeting:\n')
         # await ws.send(greeting)
