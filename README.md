@@ -1,7 +1,7 @@
 
 # STRUCT
 
-CLIENTINFO
+### CLIENTINFO
 ``` json
 {
     "ID": identifier,
@@ -10,7 +10,7 @@ CLIENTINFO
 }
 ```
 
-ROOMINFO
+### ROOMINFO
 ``` json
 {
     "ID": identifier,
@@ -27,7 +27,8 @@ ROOMINFO
 
 # REQ <---> RESP
 
-连接后
+### 连接后
+* RESP
 ``` json
 {
     "PROTO": "RESP_ONCONNECTED",
@@ -35,8 +36,8 @@ ROOMINFO
 }
 ```
 
-注册
-REQ
+### 注册
+* REQ
 ``` json
 {
     "PROTO": "REQ_REGISTER",
@@ -44,7 +45,7 @@ REQ
     "ICON": player head icon,
 }
 ```
-RESP
+* RESP
 ``` json
 {
     "PROTO": "RESP_REGISTER",
@@ -52,14 +53,14 @@ RESP
 }
 ```
 
-获取房间列表
-REQ
+### 获取房间列表
+* REQ
 ``` json
 {
     "PROTO": "REQ_GET_ROOM_LIST",
 }
 ```
-RESP
+* RESP
 ``` json
 {
     "PROTO": "RESP_GET_ROOM_LIST",
@@ -71,8 +72,8 @@ RESP
 }
 ```
 
-创建房间
-REQ
+### 创建房间
+* REQ
 ``` json
 {
     "PROTO": "REQ_CREATE_ROOM",
@@ -80,7 +81,7 @@ REQ
     "PWD": password if needed,
 }
 ```
-RESP
+* RESP
 ``` json
 {
     "PROTO": "RESP_CREATE_ROOM",
@@ -89,8 +90,8 @@ RESP
 }
 ```
 
-以玩家身份进入房间
-REQ
+### 以玩家身份进入房间
+* REQ
 ``` json
 {
     "PROTO": "REQ_JOIN_ROOM_AS_PLAYER",
@@ -98,7 +99,7 @@ REQ
     "PWD": password if needed,
 }
 ```
-RESP
+* RESP
 ``` json
 {
     "PROTO": "RESP_JOIN_ROOM_AS_PLAYER",
@@ -107,8 +108,8 @@ RESP
 }
 ```
 
-以观众身份进入房间
-REQ
+### 以观众身份进入房间
+* REQ
 ``` json
 {
     "PROTO": "REQ_JOIN_ROOM_AS_VIEWER",
@@ -116,7 +117,7 @@ REQ
     "PWD": password if needed,
 }
 ```
-RESP
+* RESP
 ``` json
 {
     "PROTO": "RESP_JOIN_ROOM_AS_VIEWER",
@@ -125,14 +126,14 @@ RESP
 }
 ```
 
-退出房间
-REQ
+### 退出房间
+* REQ
 ``` json
 {
     "PROTO": "REQ_QUIT_ROOM",
 }
 ```
-RESP
+* RESP
 ``` json
 {
     "PROTO": "RESP_QUIT_ROOM",
@@ -140,14 +141,14 @@ RESP
 }
 ```
 
-获取房间玩家信息列表
-REQ
+### 获取房间玩家信息列表
+* REQ
 ``` json
 {
     "PROTO": "REQ_GET_ROOM_PLAYER_LIST",
 }
 ```
-RESP
+* RESP
 ``` json
 {
     "PROTO": "RESP_GET_ROOM_PLAYER_LIST",
@@ -159,14 +160,14 @@ RESP
 }
 ```
 
-获取房间观众信息列表
-REQ
+### 获取房间观众信息列表
+* REQ
 ``` json
 {
     "PROTO": "REQ_GET_ROOM_VIEWER_LIST",
 }
 ```
-RESP
+* RESP
 ``` json
 {
     "PROTO": "RESP_GET_ROOM_VIEWER_LIST",
@@ -178,29 +179,29 @@ RESP
 }
 ```
 
-发送聊天信息
-REQ
+### 发送聊天信息
+* REQ
 ``` json
 {
     "PROTO": "REQ_SEND_CHAT",
     "MSG": chat message,
 }
 ```
-RESP
+* RESP
 ``` json
 no response
 ```
 
 
-发送答案
-REQ
+### 发送答案
+* REQ
 ``` json
 {
     "PROTO": "REQ_SEND_ANSWER",
     "ANSWER": answer,
 }
 ```
-RESP
+* RESP
 ``` json
 {
     "PROTO": "RESP_SEND_ANSWER",
@@ -209,15 +210,15 @@ RESP
 }
 ```
 
-开始一轮游戏
-REQ
+### 开始一轮游戏
+* REQ
 ``` json
 {
     "PROTO": "REQ_ROUND_START",
     "ANSWER": answer to this round,
 }
 ```
-RESP
+* RESP
 ``` json
 {
     "PROTO": "RESP_ROUND_START",
@@ -225,14 +226,14 @@ RESP
 }
 ```
 
-结束一轮游戏
-REQ
+### 结束一轮游戏
+* REQ
 ``` json
 {
     "PROTO": "REQ_ROUND_OVER",
 }
 ```
-RESP
+* RESP
 ``` json
 {
     "PROTO": "RESP_ROUND_OVER",
@@ -240,33 +241,33 @@ RESP
 }
 ```
 
-绘画
-REQ
+### 绘画
+* REQ
 ``` json
 undefined
 ```
-RESP
+* RESP
 ``` json
 undefined
 ```
 
-心跳
-REQ
+### 心跳
+* REQ
 ``` json
 {
     "PROTO": "REQ_HEARTBEAT",
 }
 ```
-RESP
+* RESP
 ``` json
 {
     "PROTO": "RESP_HEARTBEAT",
 }
 ```
 
-通用
-请求处理失败
-RESP
+### 通用
+#### 请求处理失败
+* RESP
 ``` json
 {
     "PROTO": "RESP_HANDLE_REQ_FAILED"
@@ -277,7 +278,7 @@ RESP
 # BROADCAST
 
 ## 房间内广播
-聊天信息广播
+### 聊天信息广播
 ``` json
 {
     "PROTO": "BROADCAST_CHAT",
@@ -285,7 +286,7 @@ RESP
 }
 ```
 
-玩家进房广播
+### 玩家进房广播
 ``` json
 {
     "PROTO": "BROADCAST_PLAYER_JOINED",
@@ -293,7 +294,7 @@ RESP
 }
 ```
 
-观众进房广播
+### 观众进房广播
 ``` json
 {
     "PROTO": "BROADCAST_VIEWER_JOINED",
@@ -301,7 +302,7 @@ RESP
 }
 ```
 
-玩家退房广播
+### 玩家退房广播
 ``` json
 {
     "PROTO": "BROADCAST_PLAYER_EXIT",
@@ -309,7 +310,7 @@ RESP
 }
 ```
 
-观众退房广播
+### 观众退房广播
 ``` json
 {
     "PROTO": "BROADCAST_VIEWER_EXIT",
@@ -317,14 +318,14 @@ RESP
 }
 ```
 
-一轮游戏开始广播
+### 一轮游戏开始广播
 ``` json
 {
     "PROTO": "BROADCAST_ROUNDSTART",
 }
 ```
 
-一轮游戏结束广播
+### 一轮游戏结束广播
 ``` json
 {
     "PROTO": "BROADCAST_ROUNDOVER",

@@ -169,3 +169,11 @@ class room:
             'NEEDPWD': self.pwd is not None,
         }
         return obj
+    
+    def clear(self):
+        self.players = set()
+        self.viewer = set()
+        self.correctplayers = []
+        self.history = []
+        self.roundstarted = False
+        self.answer = None

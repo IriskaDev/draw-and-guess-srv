@@ -364,14 +364,22 @@ async def ondisconnected(ws, quitroom=True):
                 # need to delete room and notify players and viewers in the room
                 for viewer in r.viewers:
                     viewer.room = None
-                await broadcastmsg(r.viewers, protoassembler.get_resp_quit_room(0))
                 for player in r.players:
                     player.room = None
-                await broadcastmsg(r.players, protoassembler.get_resp_quit_room(0))
+                l = r.getbroadcastwslist()
+                r.clear()
                 del ROOMS[c.room]
                 updatesortedroom()
+
+                # we broadcast it at the end of all processes
+                await broadcastmsg(l, protoassembler.get_resp_quit_room(0))
             else:
+                isviewer = r.clientisviewer(c)
                 r.quitroom(c)
+                if isviewer:
+                    await broadcastmsg(r.getbroadcastwslist(), protoassembler.get_broadcast_viewer_exit(c))
+                else:
+                    await broadcastmsg(r.getbroadcastwslist(), protoassembler.get_broadcast_player_exit(c))
 
     del CLIENTS[ws]
 
