@@ -81,7 +81,7 @@ async def oncreateroom(c, req):
         r.pwd = req['PWD']
     ROOMS[r.id] = r
     updatesortedroom()
-    await c.ws.send(protoassembler.get_resp_create_room(0, r.id))
+    await c.ws.send(protoassembler.get_resp_create_room(0, r.getroombreifinfoobejct()))
 
 
 async def joinroom_asplayer(c, req):

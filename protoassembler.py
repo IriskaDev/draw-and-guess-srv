@@ -29,11 +29,11 @@ def get_resp_get_room_list(errcode, rooms):
         }
     return json.dumps(resp)
 
-def get_resp_create_room(errcode, roomid=0):
+def get_resp_create_room(errcode, roominfo):
     resp = {
         'PROTO': 'RESP_CREATE_ROOM',
         'ERRCODE': errcode,
-        'ROOMID': roomid
+        'ROOMINFO': roominfo,
     }
     return json.dumps(resp)
 
