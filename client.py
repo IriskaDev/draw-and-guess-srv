@@ -26,3 +26,6 @@ class client:
             'ICON': self.icon,
         }
         return obj
+
+    def printinfo(self):
+        print(self.id, self.name, self.icon, self.room)

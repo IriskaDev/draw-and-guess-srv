@@ -1,4 +1,5 @@
 from singleton import singleton
+from config_manager import configmgr
 
 @singleton
 class roomidgenerator:
@@ -23,8 +24,8 @@ class room:
         self.players = set()
         # container of client object
         self.viewers = set()
-        self.maxplayers = 0
-        self.maxviewers = 0
+        self.maxplayers = configmgr().getmaxplayers()
+        self.maxviewers = configmgr().getmaxviewers()
         self.answer = None
         self.history = []
         # container of client object

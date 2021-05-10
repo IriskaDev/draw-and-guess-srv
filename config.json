@@ -1,4 +1,6 @@
 {
     "srv-ip": "127.0.0.1",
-    "srv-port": 12013
+    "srv-port": 12013,
+    "maxplayers": 5,
+    "maxviewers": 30
 }

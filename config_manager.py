@@ -24,5 +24,15 @@ class configmgr:
         if self.dataobj is None:
             return "localhost"
         return self.dataobj['srv-ip']
+    
+    def getmaxplayers():
+        if self.dataobj is None:
+            return 0
+        return self.dataobj["maxplayers"]
+    
+    def getmaxviewers():
+        if self.dataobj is None:
+            return 0
+        return self.dataobj["maxviewers"]
 
 

@@ -52,6 +52,7 @@ async def onregister(c, req):
         # return
 
     c.name = req['NAME']
+    c.icon = req['ICON']
     await c.ws.send(protoassembler.get_resp_register(0))
 
 async def getroomlist(c, req):
@@ -403,7 +404,6 @@ async def onmessage(ws, msg):
         await ws.send(protoassembler.get_resp_handle_req_failed())
         print('handle message failed: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
 
-    
 
 async def handler(ws, uri):
     await onconnected(ws)
@@ -419,7 +419,7 @@ def start():
     port = int(configmgr().getport())
     ip = configmgr().getip()
     print (ip, port)
-    srv = websockets.serve(handler, ip, port=port, ping_interval=10)
+    srv = websockets.serve(handler, ip, port=port, ping_interval=10, compression=None)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(
         srv
