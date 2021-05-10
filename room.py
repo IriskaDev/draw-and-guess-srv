@@ -85,7 +85,7 @@ class room:
         if player in self.viewers:
             return
         self.players.add(player)
-        player.roomid = self.id
+        player.room = self.id
         # send join success
         # don't do it here, do it outside
         # self.sendhistorydraws(player)
@@ -96,7 +96,7 @@ class room:
         if viewer in self.players:
             return
         self.viewers.add(viewer)
-        viewer.roomid = self.id
+        viewer.room = self.id
         # send join success
         # don't do it here, do it outside
         # await self.sendhistorydraws(viewer)
@@ -111,7 +111,7 @@ class room:
         self.pwd = pwd
 
     def quitroom(self, c):
-        c.roomid = None
+        c.room = None
         if c in self.players:
             self.players.remove(c)
         if c in self.viewers:
@@ -122,35 +122,35 @@ class room:
     def getplayerinfolist(self):
         l = []
         for i in self.players:
-            l.append(i.getinfoobject())
+            l.append(i.getinfo())
         return l
 
     def getviewerinfolist(self):
         l = []
         for i in self.viewers:
-            l.append(i.getinfoobject())
+            l.append(i.getinfo())
         return l
     
     def getcorrectplayerinfolist(self):
         l = []
         for i in self.correctplayers:
-            l.append(i.getinfoobejct())
+            l.append(i.getinfo())
         return l
 
-    def getbroadcastwslist(self):
+    def getbroadcastclientlist(self):
         l = []
         for i in self.viewers:
-            l.append(i.ws)
+            l.append(i)
         for i in self.players:
-            l.append(i.ws)
-        l.append(self.host.ws)
+            l.append(i)
+        l.append(self.host)
         return l
 
-    def getroominfoobject(self):
+    def getroominfo(self):
         obj = {
             'ID': self.id,
             'NAME': self.name,
-            'HOST': self.host.getinfoobject(),
+            'HOST': self.host.getinfo(),
             'PLAYERS': self.getplayerinfolist(),
             'VIEWERS': self.getviewerinfolist(),
             'HISTORYDRAWS': None,
@@ -158,11 +158,11 @@ class room:
         }
         return obj
 
-    def getroombreifinfoobejct(self):
+    def getroombriefinfo(self):
         obj = {
             'ID': self.id,
             'NAME': self.name,
-            'HOST': self.host.getinfoobject(),
+            'HOST': self.host.getinfo(),
             'PLAYERCOUNT': self.playercount(),
             'VIEWERCOUNT': self.viewercount(),
             'MAXPLAYER': self.maxplayers,

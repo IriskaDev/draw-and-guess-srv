@@ -19,7 +19,7 @@ class client:
         self.icon = None
         self.room = None
     
-    def getinfoobject(self):
+    def getinfo(self):
         obj = {
             'ID': self.id,
             'NAME': self.name,

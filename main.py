@@ -2,7 +2,7 @@ from config_manager import configmgr
 from singleton import singleton
 import worker
 
-import fakedatafiller
+import testroutine
 
 @singleton
 class sometestcls:
@@ -10,7 +10,8 @@ class sometestcls:
         pass
 
 if __name__ == "__main__":
-    fakedatafiller.run()
+    configmgr().read('./config.json')
+    testroutine.run()
     worker.start()
 
 

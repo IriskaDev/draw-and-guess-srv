@@ -117,28 +117,28 @@ def get_broadcast_chat(msg):
 def get_broadcast_player_joined(c):
     resp = {
         'PROTO': 'BROADCAST_PLAYER_JOINED',
-        'PLAYER': c.getinfoobject(),
+        'PLAYER': c.getinfo(),
     }
     return json.dumps(resp)
 
 def get_broadcast_viewer_joined(c):
     resp = {
         'PROTO': 'BROADCAST_VIEWER_JOINED',
-        'VIEWER': c.getinfoobject(),
+        'VIEWER': c.getinfo(),
     }
     return json.dumps(resp)
 
 def get_broadcast_player_exit(c):
     resp = {
         'PROTO': 'BROADCAST_PLAYER_EXIT',
-        'PLAYER': c.getinfoobject(),
+        'PLAYER': c.getinfo(),
     }
     return json.dumps(resp)
 
 def get_broadcast_viewer_exit(c):
     resp = {
         'PROTO': 'BROADCAST_VIEWER_EXIT',
-        'VIEWER': c.getinfoobject(),
+        'VIEWER': c.getinfo(),
     }
     return json.dumps(resp)
 

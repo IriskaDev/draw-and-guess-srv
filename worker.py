@@ -61,17 +61,17 @@ async def getroomlist(c, req):
         # sortby = req['sort']
     infolist = []
     for i in SORTED_ROOMS:
-        info = i.getroombriefinfoobject()
+        info = i[1].getroombriefinfo()
         infolist.append(info)
     await c.ws.send(protoassembler.get_resp_get_room_list(0, infolist))
 
 async def oncreateroom(c, req):
     if 'NAME' not in req:
-        await c.ws.send(protoassembler.get_resp_create_room(1))
+        await c.ws.send(protoassembler.get_resp_create_room(1, None))
         return
 
     if c.room is not None:
-        await c.ws.send(protoassembler.get_resp_create_room(2))
+        await c.ws.send(protoassembler.get_resp_create_room(2, None))
         return
     
     r = room()
@@ -82,68 +82,68 @@ async def oncreateroom(c, req):
         r.pwd = req['PWD']
     ROOMS[r.id] = r
     updatesortedroom()
-    await c.ws.send(protoassembler.get_resp_create_room(0, r.getroombreifinfoobejct()))
+    await c.ws.send(protoassembler.get_resp_create_room(0, r.getroombriefinfo()))
 
 
 async def joinroom_asplayer(c, req):
     if 'ROOMID' not in req:
-        await c.ws.send(protoassembler.get_resp_join_room_as_player(1))
+        await c.ws.send(protoassembler.get_resp_join_room_as_player(1, None))
         return
     roomid = req['ROOMID']
     if roomid not in ROOMS:
-        await c.ws.send(protoassembler.get_resp_join_room_as_player(2))
+        await c.ws.send(protoassembler.get_resp_join_room_as_player(2, None))
         return
     r = ROOMS[roomid]
     if r.isplayerfull():
-        await c.ws.send(protoassembler.get_resp_join_room_as_player(3))
+        await c.ws.send(protoassembler.get_resp_join_room_as_player(3, None))
         return
 
     if r.clientinroom(c):
-        await c.ws.send(protoassembler.get_resp_join_room_as_player(4))
+        await c.ws.send(protoassembler.get_resp_join_room_as_player(4, None))
         return
     
     if r.pwd is not None:
         if 'PWD' not in req:
-            await c.ws.send(protoassembler.get_resp_join_room_as_player(5))
+            await c.ws.send(protoassembler.get_resp_join_room_as_player(5, None))
             return
         pwd = req['PWD']
         if pwd != r.pwd:
-            await c.ws.send(protoassembler.get_resp_join_room_as_player(5))
+            await c.ws.send(protoassembler.get_resp_join_room_as_player(5, None))
             return
     
-    l = r.getbroadcastwslist()
+    l = r.getbroadcastclientlist()
     r.joinasplayer(c)
-    await c.ws.send(protoassembler.get_resp_join_room_as_player(0, r.getroominfoobject()))
+    await c.ws.send(protoassembler.get_resp_join_room_as_player(0, r.getroominfo()))
     await broadcastmsg(l, protoassembler.get_broadcast_player_joined(c))
 
 async def joinroom_asviewer(c, req):
     if 'ROOMID' not in req:
-        await c.ws.send(protoassembler.get_resp_join_room_as_viewer(1))
+        await c.ws.send(protoassembler.get_resp_join_room_as_viewer(1, None))
         return
     roomid = req['ROOMID']
     if roomid not in ROOMS:
-        await c.ws.send(protoassembler.get_resp_join_room_as_viewer(2))
+        await c.ws.send(protoassembler.get_resp_join_room_as_viewer(2, None))
         return
     r = ROOMS[roomid]
     if r.isviewerfull():
-        await c.ws.send(protoassembler.get_resp_join_room_as_viewer(3))
+        await c.ws.send(protoassembler.get_resp_join_room_as_viewer(3, None))
         return
     if r.clientinroom(c):
-        await c.ws.send(protoassembler.get_resp_join_room_as_viewer(4))
+        await c.ws.send(protoassembler.get_resp_join_room_as_viewer(4, None))
         return
     
     if r.pwd is not None:
         if 'PWD' not in req:
-            await c.ws.send(protoassembler.get_resp_join_room_as_viewer(5))
+            await c.ws.send(protoassembler.get_resp_join_room_as_viewer(5, None))
             return
         pwd = req['PWD']
         if pwd != r.pwd:
-            await c.ws.send(protoassembler.get_resp_join_room_as_viewer(5))
+            await c.ws.send(protoassembler.get_resp_join_room_as_viewer(5, None))
             return
     
-    l = r.getbroadcastwslist()
+    l = r.getbroadcastclientlist()
     r.joinasviewer(c)
-    await c.ws.send(protoassembler.get_resp_join_room_as_viewer(0, r.getroominfoobject()))
+    await c.ws.send(protoassembler.get_resp_join_room_as_viewer(0, r.getroominfo()))
     await broadcastmsg(l, protoassembler.get_broadcast_viewer_joined(c))
 
 async def quitroom(c, req):
@@ -178,9 +178,9 @@ async def quitroom(c, req):
     r.quitroom(c)
     await c.ws.send(protoassembler.get_resp_quit_room(0))
     if isviewer:
-        await broadcastmsg(r.getbroadcastwslist(), protoassembler.get_broadcast_viewer_exit(c))
+        await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_viewer_exit(c))
     else:
-        await broadcastmsg(r.getbroadcastwslist(), protoassembler.get_broadcast_player_exit(c))
+        await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_player_exit(c))
 
 async def get_room_player_list(c, req):
     if c.room is None:
@@ -236,7 +236,7 @@ async def send_chat(c, req):
     if len(msg) <= 0:
         return
     
-    await broadcastmsg(r.getbroadcastwslist(), msg)
+    await broadcastmsg(r.getbroadcastclientlist(), msg)
     
 
 async def send_answer(c, req):
@@ -298,7 +298,7 @@ async def roundstart(c, req):
     
     r.roundstart(answer)
     await c.ws.send(protoassembler.get_resp_roundstart(0))
-    l = r.getbroadcastwslist()
+    l = r.getbroadcastclientlist()
     broadcastmsg(l, protoassembler.get_broadcast_roundstart())
 
 async def roundover(c, req):
@@ -317,7 +317,7 @@ async def roundover(c, req):
     
     r.roundover()
     await c.ws.send(protoassembler.get_resp_roundover(0))
-    l = r.getbroadcastwslist()
+    l = r.getbroadcastclientlist()
     broadcastmsg(l, protoassembler.get_broadcast_roundover(r.getcorrectplayerinfolist()))
 
 async def draw(c, req):
@@ -367,7 +367,7 @@ async def ondisconnected(ws, quitroom=True):
                     viewer.room = None
                 for player in r.players:
                     player.room = None
-                l = r.getbroadcastwslist()
+                l = r.getbroadcastclientlist()
                 r.clear()
                 del ROOMS[c.room]
                 updatesortedroom()
@@ -378,9 +378,9 @@ async def ondisconnected(ws, quitroom=True):
                 isviewer = r.clientisviewer(c)
                 r.quitroom(c)
                 if isviewer:
-                    await broadcastmsg(r.getbroadcastwslist(), protoassembler.get_broadcast_viewer_exit(c))
+                    await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_viewer_exit(c))
                 else:
-                    await broadcastmsg(r.getbroadcastwslist(), protoassembler.get_broadcast_player_exit(c))
+                    await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_player_exit(c))
 
     del CLIENTS[ws]
 
@@ -415,7 +415,6 @@ async def handler(ws, uri):
         await ondisconnected(ws)
 
 def start():
-    configmgr().read('./config.json')
     port = int(configmgr().getport())
     ip = configmgr().getip()
     print (ip, port)
