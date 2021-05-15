@@ -1,4 +1,4 @@
-from config_manager import configmgr
+from configmgr import configmgr
 from singleton import singleton
 import worker
 

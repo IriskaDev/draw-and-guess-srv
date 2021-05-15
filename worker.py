@@ -6,29 +6,16 @@ import websockets
 import json
 import math
 import protoassembler
-from config_manager import configmgr
+from configmgr import configmgr
 from singleton import singleton
 from room import room
 from client import client
+from roommgr import roommgr
+from clientmgr import clientmgr
 
 # ws - client
 CLIENTS = dict()
 # NAMES = set()
-# id - room
-ROOMS = dict()
-
-# sorted rooms
-# only used in generating room list for client
-# when ROOMS updated, use code below to generate SORTED_ROOMS
-# SORTED_ROOMS = sorted(ROOMS.items(), key=lambda x: x[0])
-# after sorted, we get a list which contains values as shown below
-# [(key, value), (key, value), ...]
-SORTED_ROOMS = []
-
-
-def updatesortedroom():
-    SORTED_ROOMS.clear()
-    SORTED_ROOMS.extend(sorted(ROOMS.items(), key=lambda x: x[0]))
 
 async def broadcastmsg(clientlist, msg):
     for c in clientlist:
@@ -47,41 +34,56 @@ async def onregister(c, req):
     if 'ICON' not in req:
         await c.ws.send(protoassembler.get_resp_register(2))
 
-    # if req['NAME'] in NAMES:
-        # await c.ws.send(protoassembler.get_resp_register(2))
-        # return
-
     c.name = req['NAME']
     c.icon = req['ICON']
     await c.ws.send(protoassembler.get_resp_register(0))
 
 async def getroomlist(c, req):
-    # sortby = "BYID"
-    # if 'SORT' in req:
-        # sortby = req['sort']
-    infolist = []
-    for i in SORTED_ROOMS:
-        info = i[1].getroombriefinfo()
-        infolist.append(info)
+    infolist = roommgr().getsortedroomlist()
     await c.ws.send(protoassembler.get_resp_get_room_list(0, infolist))
 
 async def oncreateroom(c, req):
     if 'NAME' not in req:
         await c.ws.send(protoassembler.get_resp_create_room(1, None))
         return
-
-    if c.room is not None:
-        await c.ws.send(protoassembler.get_resp_create_room(2, None))
+    rname = req['NAME']
+    if type(rname) is not str:
+        await c.ws.send(protoassembler.get_resp_create_room(1, None))
         return
     
-    r = room()
-    r.host = c
-    r.name = req['NAME']
-    c.room = r.id
+    if 'MAXPLAYERS' not in req:
+        await c.ws.send(protoassembler.get_resp_create_room(2, None))
+        return
+
+    maxplayers = req['MAXPLAYERS']
+    if type(maxplayers) is not int and type(maxplayers) is not float:
+        await c.ws.send(protoassembler.get_resp_create_room(2, None))
+        return
+    maxplayers = int(maxplayers)
+
+    if 'MAXSCORE' not in req:
+        await c.ws.send(protoassembler.get_resp_create_room(3, None))
+        return
+    
+    maxscore = req['MAXSCORE']
+    if type(maxscore) is not int and type(maxscore) is not float:
+        await c.ws.send(protoassembler.get_resp_create_room(3, None))
+        return
+    maxscore = int(maxscore)
+    
+
+    if c.room is not None:
+        await c.ws.send(protoassembler.get_resp_create_room(4, None))
+        return
+    
+    # r = room()
+    r = None
     if 'PWD' in req:
-        r.pwd = req['PWD']
-    ROOMS[r.id] = r
-    updatesortedroom()
+        r = roommgr().createroom(rname, maxplayers, maxscore, req['PWD'])
+    else:
+        r = roommgr().createroom(rname, maxplayers, maxscore, None)
+
+    r.joinasplayer(c)
     await c.ws.send(protoassembler.get_resp_create_room(0, r.getroombriefinfo()))
 
 
@@ -90,10 +92,10 @@ async def joinroom_asplayer(c, req):
         await c.ws.send(protoassembler.get_resp_join_room_as_player(1, None))
         return
     roomid = req['ROOMID']
-    if roomid not in ROOMS:
+    if not roommgr().roomexists(roomid):
         await c.ws.send(protoassembler.get_resp_join_room_as_player(2, None))
         return
-    r = ROOMS[roomid]
+    r = roommgr().getroom(roomid)
     if r.isplayerfull():
         await c.ws.send(protoassembler.get_resp_join_room_as_player(3, None))
         return
@@ -121,10 +123,10 @@ async def joinroom_asviewer(c, req):
         await c.ws.send(protoassembler.get_resp_join_room_as_viewer(1, None))
         return
     roomid = req['ROOMID']
-    if roomid not in ROOMS:
+    if not roommgr().roomexists(roomid):
         await c.ws.send(protoassembler.get_resp_join_room_as_viewer(2, None))
         return
-    r = ROOMS[roomid]
+    r = roommgr().getroom(roomid)
     if r.isviewerfull():
         await c.ws.send(protoassembler.get_resp_join_room_as_viewer(3, None))
         return
@@ -151,27 +153,15 @@ async def quitroom(c, req):
         await c.ws.send(protoassembler.get_resp_quit_room(1))
         return
     
-    if c.room not in ROOMS:
+    if not roommgr().roomexists(c.room):
         c.room = None
         await c.ws.send(protoassembler.get_resp_quit_room(2))
         return
     
-    r = ROOMS[c.room]
+    r = roommgr().getroom(c.room)
     if not r.clientinroom(c):
         c.room = None
         await c.ws.send(protoassembler.get_resp_quit_room(1))
-        return
-    
-    if c == r.host:
-        for viewer in r.viewers:
-            viewer.room = None
-        await broadcastmsg(r.viewers, protoassembler.get_resp_quit_room(0))
-        for player in r.players:
-            player.room = None
-        await broadcastmsg(r.players, protoassembler.get_resp_quit_room(0))
-        # delete room here
-        del ROOMS[c.room]
-        updatesortedroom()
         return
     
     isviewer = r.clientisviewer(c)
@@ -182,17 +172,22 @@ async def quitroom(c, req):
     else:
         await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_player_exit(c))
 
+    if r.isempty():
+        # remove room
+        pass
+
+
 async def get_room_player_list(c, req):
     if c.room is None:
         await c.ws.send(protoassembler.get_resp_get_room_player_list(1, None))
         return
     
-    if c.room not in ROOMS:
+    if not roommgr().roomexists(c.room):
         c.room = None
         await c.ws.send(protoassembler.get_resp_get_room_player_list(2, None))
         return
 
-    r = ROOMS[c.room]
+    r = roommgr().getroom(c.room)
     if not r.clientinroom(c):
         c.room = None
         await c.ws.send(protoassembler.get_resp_get_room_player_list(3, None))
@@ -205,12 +200,12 @@ async def get_room_viewer_list(c, req):
         await c.ws.send(protoassembler.get_resp_get_room_viewer_list(1, None))
         return
     
-    if c.room not in ROOMS:
+    if not roommgr().roomexists(c.room):
         c.room = None
         await c.ws.send(protoassembler.get_resp_get_room_viewer_list(2, None))
         return
     
-    r = ROOMS[c.room]
+    r = roommgr().getroom(c.room)
     if not r.clientinroom(c):
         c.room = None
         await c.ws.send(protoassembler.get_resp_get_room_viewer_list(3, None))
@@ -222,10 +217,10 @@ async def send_chat(c, req):
     if c.room is None:
         return
 
-    if c.room not in ROOMS:
+    if not roommgr().roomexists(c.room):
         return
 
-    r = ROOMS[c.room]
+    r = roommgr().getroom(c.room)
     if not r.clientinroom(c):
         c.room = None
         return
@@ -244,12 +239,12 @@ async def send_answer(c, req):
         c.ws.send(protoassembler.get_resp_send_answer(1, False))
         return
 
-    if c.room not in ROOMS:
+    if not roommgr().roomexists(c.room):
         c.room = None
         c.ws.send(protoassembler.get_resp_send_answer(2, False))
         return
     
-    r = ROOMS[c.room]
+    r = roommgr().getroom(c.room)
     if not r.clientinroom(c):
         c.room = None
         await c.ws.send(protoassembler.get_resp_send_answer(3, False))
@@ -278,11 +273,11 @@ async def roundstart(c, req):
         await c.ws.send(protoassembler.get_resp_roundstart(1))
         return
 
-    if c.room not in ROOMS:
+    if not roommgr().roomexists(c.room):
         await c.ws.send(protoassembler.get_resp_roundstart(2))
         return
 
-    r = ROOMS[c.room]
+    r = roommgr().getroom(c.room)
     if r.host != c:
         await c.ws.send(protoassembler.get_resp_roundstart(3))
         return
@@ -306,11 +301,11 @@ async def roundover(c, req):
         await c.ws.send(protoassembler.get_resp_roundover(1))
         return
     
-    if c.room not in ROOMS:
+    if not roommgr().roomexists(c.room):
         await c.ws.send(protoassembler.get_resp_roundover(2))
         return
     
-    r = ROOMS[c.room]
+    r = roommgr().getroom(c.room)
     if r.host != c:
         await c.ws.send(protoassembler.get_resp_roundover(3))
         return
@@ -357,30 +352,20 @@ async def ondisconnected(ws, quitroom=True):
     if ws not in CLIENTS:
         return
     c = CLIENTS[ws]
-    # NAMES.remove(c.name)
     if quitroom:
         if c.room is not None:
-            r = ROOMS[c.room]
-            if r.host == c:
-                # need to delete room and notify players and viewers in the room
-                for viewer in r.viewers:
-                    viewer.room = None
-                for player in r.players:
-                    player.room = None
-                l = r.getbroadcastclientlist()
-                r.clear()
-                del ROOMS[c.room]
-                updatesortedroom()
-
-                # we broadcast it at the end of all processes
-                await broadcastmsg(l, protoassembler.get_resp_quit_room(0))
-            else:
+            if roommgr().roomexists(c.room):
+                r = roommgr().getroom(c.room)
                 isviewer = r.clientisviewer(c)
                 r.quitroom(c)
                 if isviewer:
                     await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_viewer_exit(c))
                 else:
                     await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_player_exit(c))
+
+                if r.isempty():
+                    # remove room
+                    pass
 
     del CLIENTS[ws]
 

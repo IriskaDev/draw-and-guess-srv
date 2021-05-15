@@ -1,5 +1,4 @@
 from singleton import singleton
-from config_manager import configmgr
 
 @singleton
 class roomidgenerator:
@@ -18,14 +17,14 @@ class room:
     def __init__(self):
         self.id = roomidgenerator().getnewid()
         self.pwd = None
-        self.host = None
         self.name = ""
         # container of client object
+        self.maxscore = 0
         self.players = set()
         # container of client object
         self.viewers = set()
-        self.maxplayers = configmgr().getmaxplayers()
-        self.maxviewers = configmgr().getmaxviewers()
+        self.maxplayers = 0
+        self.maxviewers = 9999999
         self.answer = None
         self.history = []
         # container of client object
@@ -86,9 +85,6 @@ class room:
             return
         self.players.add(player)
         player.room = self.id
-        # send join success
-        # don't do it here, do it outside
-        # self.sendhistorydraws(player)
 
     def joinasviewer(self, viewer):
         if viewer in self.viewers:
@@ -143,14 +139,12 @@ class room:
             l.append(i)
         for i in self.players:
             l.append(i)
-        l.append(self.host)
         return l
 
     def getroominfo(self):
         obj = {
             'ID': self.id,
             'NAME': self.name,
-            'HOST': self.host.getinfo(),
             'PLAYERS': self.getplayerinfolist(),
             'VIEWERS': self.getviewerinfolist(),
             'HISTORYDRAWS': None,
@@ -162,7 +156,6 @@ class room:
         obj = {
             'ID': self.id,
             'NAME': self.name,
-            'HOST': self.host.getinfo(),
             'PLAYERCOUNT': self.playercount(),
             'VIEWERCOUNT': self.viewercount(),
             'MAXPLAYER': self.maxplayers,
@@ -170,6 +163,9 @@ class room:
             'NEEDPWD': self.pwd is not None,
         }
         return obj
+
+    def isempty(self):
+        return (self.playercount() + self.viewercount()) <= 0
     
     def clear(self):
         self.players = set()

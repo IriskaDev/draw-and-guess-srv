@@ -42,7 +42,9 @@ async def test():
     c0 = worker.CLIENTS[wslist[0]]
     await worker.oncreateroom(c0, {
         'PROTO': 'REQ_CREATE_ROOM',
-        'NAME': 'ROOM_1'
+        'NAME': 'ROOM_1',
+        'MAXPLAYERS': 5,
+        'MAXSCORE': 120
     })
     c0.printinfo()
     # printallclientinfo()
