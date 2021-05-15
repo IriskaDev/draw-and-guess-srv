@@ -54,6 +54,13 @@ def get_resp_join_room_as_viewer(errcode, roominfo=None):
     }
     return json.dumps(resp)
 
+def get_resp_ready_for_play(errcode):
+    resp = {
+        'PROTO': 'RESP_READY_FOR_PLAY',
+        'ERRCODE': errcode
+    }
+    return json.dumps(resp)
+
 def get_resp_quit_room(errcode):
     resp = {
         'PROTO': 'RESP_QUIT_ROOM',
@@ -114,9 +121,23 @@ def get_broadcast_chat(msg):
     }
     return json.dumps(resp)
 
-def get_broadcast_player_joined(c):
+def get_broadcast_player_joined(statinfo):
     resp = {
         'PROTO': 'BROADCAST_PLAYER_JOINED',
+        'PLAYERSTAT': statinfo,
+    }
+    return json.dumps(resp)
+
+def get_broadcast_player_ready(statinfo):
+    resp = {
+        'PROTO': 'BROADCAST_PLAYER_READY',
+        'PLAYERSTAT': statinfo
+    }
+    return json.dumps(resp)
+
+def get_broadcast_player_exit(c):
+    resp = {
+        'PROTO': 'BROADCAST_PLAYER_EXIT',
         'PLAYER': c.getinfo(),
     }
     return json.dumps(resp)
@@ -128,13 +149,6 @@ def get_broadcast_viewer_joined(c):
     }
     return json.dumps(resp)
 
-def get_broadcast_player_exit(c):
-    resp = {
-        'PROTO': 'BROADCAST_PLAYER_EXIT',
-        'PLAYER': c.getinfo(),
-    }
-    return json.dumps(resp)
-
 def get_broadcast_viewer_exit(c):
     resp = {
         'PROTO': 'BROADCAST_VIEWER_EXIT',
@@ -142,9 +156,10 @@ def get_broadcast_viewer_exit(c):
     }
     return json.dumps(resp)
 
-def get_broadcast_roundstart():
+def get_broadcast_roundstart(roundinfo):
     resp = {
         'PROTO': 'BROADCAST_ROUNDSTART',
+        'ROUNDINFO': roundinfo
     }
     return json.dumps(resp)
 
@@ -152,5 +167,28 @@ def get_broadcast_roundover(correctlist):
     resp = {
         'PROTO': 'BROADCAST_ROUNDOVER',
         'CORRECTPLAYERS': correctlist,
+    }
+    return json.dumps(resp)
+
+def get_broadcast_answer_correct(playerinfo):
+    resp = {
+        'PROTO': 'BROADCAST_ANSWER_CORRECT',
+        'PLAYER': playerinfo
+    }
+    return json.dumps(resp)
+
+def get_broadcast_answer_wrong(playerinfo, answer):
+    resp = {
+        'PROTO': 'BROADCAST_ANSWER_WRONG',
+        'PLAYER': playerinfo,
+        'ANSWER': answer
+    }
+    return json.dumps(resp)
+
+# notifys
+def get_notify_round_answer(answer):
+    resp = {
+        'PROTO': 'NOTIFY_ROUND_ANSWER',
+        'ANSWER': answer
     }
     return json.dumps(resp)

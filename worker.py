@@ -5,6 +5,7 @@ import asyncio
 import websockets
 import json
 import math
+import time
 import protoassembler
 from configmgr import configmgr
 from singleton import singleton
@@ -76,7 +77,6 @@ async def oncreateroom(c, req):
         await c.ws.send(protoassembler.get_resp_create_room(4, None))
         return
     
-    # r = room()
     r = None
     if 'PWD' in req:
         r = roommgr().createroom(rname, maxplayers, maxscore, req['PWD'])
@@ -116,7 +116,7 @@ async def joinroom_asplayer(c, req):
     l = r.getbroadcastclientlist()
     r.joinasplayer(c)
     await c.ws.send(protoassembler.get_resp_join_room_as_player(0, r.getroominfo()))
-    await broadcastmsg(l, protoassembler.get_broadcast_player_joined(c))
+    await broadcastmsg(l, protoassembler.get_broadcast_player_joined(r.getplayerstat(c).getinfo()))
 
 async def joinroom_asviewer(c, req):
     if 'ROOMID' not in req:
@@ -148,6 +148,43 @@ async def joinroom_asviewer(c, req):
     await c.ws.send(protoassembler.get_resp_join_room_as_viewer(0, r.getroominfo()))
     await broadcastmsg(l, protoassembler.get_broadcast_viewer_joined(c))
 
+async def onreadyforplay(c, req):
+    if c.room is None:
+        await c.ws.send(protoassembler.get_resp_ready_for_play(1))
+        return
+    
+    if not roommgr().roomexists(c.room):
+        c.room = None
+        await c.ws.send(protoassembler.get_resp_ready_for_play(2))
+        return
+    
+    r = roommgr.getroom(c.room)
+    if not r.clientinroom(c):
+        c.room = None
+        await c.ws.send(protoassembler.get_resp_ready_for_play(3))
+        return
+    
+    if r.clientisviewer(c):
+        await c.ws.send(protoassembler.get_resp_ready_for_play(4))
+        return
+    
+    allready = r.setplayerready(c)
+    l = r.getbroadcastclientlist()
+    await broadcastmsg(l, protoassembler.get_broadcast_player_ready(r.getplayerstat().getinfo()))
+    if allready:
+        # allready means roundstarted
+        # broadcast roundstart
+        # tell the drawer what answer is
+        broadcastmsg(l, protoassembler.get_broadcast_roundstart(r.getcurrentroundinfo()))
+        drawer = r.getdrawer()
+        answer = r.getanswer()
+        try:
+            drawer.ws.send(protoassembler.get_notify_round_answer(answer))
+        except:
+            # if any thing wrong, should stop round
+            pass
+
+
 async def quitroom(c, req):
     if c.room is None:
         await c.ws.send(protoassembler.get_resp_quit_room(1))
@@ -165,6 +202,7 @@ async def quitroom(c, req):
         return
     
     isviewer = r.clientisviewer(c)
+    isdrawer = r.clientisdrawer(c)
     r.quitroom(c)
     await c.ws.send(protoassembler.get_resp_quit_room(0))
     if isviewer:
@@ -172,9 +210,14 @@ async def quitroom(c, req):
     else:
         await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_player_exit(c))
 
+    if isdrawer and r.isinround():
+        # should stop round
+        r.roundover()
+        # broadcast things
+
     if r.isempty():
         # remove room
-        pass
+        roommgr().removeroom(r.id)
 
 
 async def get_room_player_list(c, req):
@@ -254,66 +297,27 @@ async def send_answer(c, req):
         await c.ws.send(protoassembler.get_resp_send_answer(4, False))
         return
     
-    if not r.isinround():
+    if r.clientisdrawer(c):
         await c.ws.send(protoassembler.get_resp_send_answer(5, False))
+        return
+    
+    if not r.isinround():
+        await c.ws.send(protoassembler.get_resp_send_answer(6, False))
+        return
     
     if r.answer is None:
-        await c.ws.send(protoassembler.get_resp_send_answer(6, False))
+        await c.ws.send(protoassembler.get_resp_send_answer(7, False))
         return
 
     answer = req['ANSWER']
+    l = r.getbroadcastclientlist()
     if answer != r.answer:
         await c.ws.send(protoassembler.get_resp_send_answer(0, False))
+        await broadcastmsg(l, protoassembler.get_broadcast_answer_wrong(c.getinfo(), answer))
     else:
         r.playeranswercorrect(c)
         await c.ws.send(protoassembler.get_resp_send_answer(0, True))
-
-async def roundstart(c, req):
-    if c.room is None:
-        await c.ws.send(protoassembler.get_resp_roundstart(1))
-        return
-
-    if not roommgr().roomexists(c.room):
-        await c.ws.send(protoassembler.get_resp_roundstart(2))
-        return
-
-    r = roommgr().getroom(c.room)
-    if r.host != c:
-        await c.ws.send(protoassembler.get_resp_roundstart(3))
-        return
-
-    answer = req['ANSWER']
-    if type(answer) is not str:
-        await c.ws.send(protoassembler.get_resp_roundstart(4))
-        return
-    
-    if len(answer) <= 0:
-        await c.ws.send(protoassembler.get_resp_roundstart(5))
-        return
-    
-    r.roundstart(answer)
-    await c.ws.send(protoassembler.get_resp_roundstart(0))
-    l = r.getbroadcastclientlist()
-    broadcastmsg(l, protoassembler.get_broadcast_roundstart())
-
-async def roundover(c, req):
-    if c.room is None:
-        await c.ws.send(protoassembler.get_resp_roundover(1))
-        return
-    
-    if not roommgr().roomexists(c.room):
-        await c.ws.send(protoassembler.get_resp_roundover(2))
-        return
-    
-    r = roommgr().getroom(c.room)
-    if r.host != c:
-        await c.ws.send(protoassembler.get_resp_roundover(3))
-        return
-    
-    r.roundover()
-    await c.ws.send(protoassembler.get_resp_roundover(0))
-    l = r.getbroadcastclientlist()
-    broadcastmsg(l, protoassembler.get_broadcast_roundover(r.getcorrectplayerinfolist()))
+        await broadcastmsg(l, protoassembler.get_broadcast_answer_correct(c.getinfo()))
 
 async def draw(c, req):
     pass
@@ -327,13 +331,12 @@ HANDLERS = {
     'REQ_CREATE_ROOM':          oncreateroom,
     'REQ_JOIN_ROOM_AS_PLAYER':  joinroom_asplayer,
     'REQ_JOIN_ROOM_AS_VIEWER':  joinroom_asviewer,
+    'REQ_READY_FOR_PLAY':       onreadyforplay,
     'REQ_QUIT_ROOM':            quitroom,
     'REQ_GET_ROOM_PLAYER_LIST': get_room_player_list,
     'REQ_GET_ROOM_VIEWER_LIST': get_room_viewer_list,
     'REQ_SEND_CHAT':            send_chat,
     'REQ_SEND_ANSWER':          send_answer,
-    'REQ_ROUND_START':          roundstart,
-    'REQ_ROUND_OVER':           roundover,
     'REQ_DRAW':                 draw,
 
     'REQ_HEARTBEAT':            heartbeat,
@@ -357,15 +360,19 @@ async def ondisconnected(ws, quitroom=True):
             if roommgr().roomexists(c.room):
                 r = roommgr().getroom(c.room)
                 isviewer = r.clientisviewer(c)
+                isdrawer = r.clientisdrawer(c)
                 r.quitroom(c)
                 if isviewer:
                     await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_viewer_exit(c))
                 else:
                     await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_player_exit(c))
 
+                if isdrawer and r.isinround():
+                    r.roundover()
+                    # boradcast
+
                 if r.isempty():
-                    # remove room
-                    pass
+                    roommgr().removeroom(r.id)
 
     del CLIENTS[ws]
 
@@ -373,8 +380,6 @@ async def onmessage(ws, msg):
     print(ws, msg)
     try:
         c = CLIENTS[ws]
-        # if c.name is not None:
-            # print(c.name)
         req = json.loads(msg)
         if type(req['PROTO']) is not str:
             raise Exception('PROTO not found in incoming message')
@@ -390,7 +395,7 @@ async def onmessage(ws, msg):
         print('handle message failed: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
 
 
-async def handler(ws, uri):
+async def handler(ws, _):
     await onconnected(ws)
     try:
         while True:
@@ -398,6 +403,22 @@ async def handler(ws, uri):
             await onmessage(ws, msg)
     finally:
         await ondisconnected(ws)
+
+def update(tickcount, tm):
+    # print ("tick ", tickcount, tm)
+    pass
+
+async def ticker(delay):
+    i = 0
+    while True:
+        yield i
+        await asyncio.sleep(delay)
+        i += 1
+
+async def runticker():
+    async for i in ticker(configmgr().gettickinterval()):
+        tm = time.time()
+        update(i, tm)
 
 def start():
     port = int(configmgr().getport())
@@ -408,5 +429,7 @@ def start():
     loop.run_until_complete(
         srv
     )
+    loop.run_until_complete(
+        runticker()
+    )
     loop.run_forever()
-

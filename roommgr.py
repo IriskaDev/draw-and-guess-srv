@@ -3,7 +3,7 @@ from room import room
 
 
 @singleton
-class roommgr():
+class roommgr:
     def __init__(self):
         # id - room
         self.rooms  = dict()
@@ -37,8 +37,13 @@ class roommgr():
         return self.rooms[rid]
 
     def getsortedroomlist(self, sort = None):
-        # infolist = []
-        # for i in self.sortedrooms:
-            # info = i[1].getroombriefinfo()
-            # infolist.append(info)
         return [i[1].getroombriefinfo() for i in self.sortedrooms]
+    
+    def removeroom(self, rid):
+        if rid not in self.rooms:
+            return
+
+        r = self.rooms[rid]
+        r.clear()
+        del self.rooms[rid]
+        self.updatesortedrooms()

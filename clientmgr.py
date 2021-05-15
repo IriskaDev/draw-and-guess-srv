@@ -1,6 +1,6 @@
 from singleton import singleton
 
 @singleton
-class clientmgr():
+class clientmgr:
     def __init__(self):
         pass

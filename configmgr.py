@@ -25,14 +25,9 @@ class configmgr:
             return "localhost"
         return self.dataobj['srv-ip']
     
-    def getmaxplayers(self):
+    def gettickinterval(self):
         if self.dataobj is None:
-            return 0
-        return self.dataobj["maxplayers"]
+            return 1
+        return float(self.dataobj["tick-interval"])
     
-    def getmaxviewers(self):
-        if self.dataobj is None:
-            return 0
-        return self.dataobj["maxviewers"]
-
 

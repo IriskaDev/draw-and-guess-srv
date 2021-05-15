@@ -1,6 +1,5 @@
 {
     "srv-ip": "127.0.0.1",
     "srv-port": 12013,
-    "maxplayers": 5,
-    "maxviewers": 30
+    "tick-interval": 0.1
 }
