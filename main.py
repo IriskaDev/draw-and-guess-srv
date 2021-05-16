@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from configmgr import configmgr
 from singleton import singleton
 import worker

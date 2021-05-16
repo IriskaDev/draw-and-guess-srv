@@ -1,5 +1,11 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import time
+
+import websockets
 from singleton import singleton
+from questionsmgr import questionmgr
 
 @singleton
 class roomidgenerator:
@@ -16,34 +22,31 @@ class playerstatus:
         self.player = player
         self.isready = False
         self.score = 0
-        self.isdrawer = False
         self.entertm = time.time()
 
     def setready(self, val):
         self.isready = val
     
-    def setdrawer(self, val):
-        self.isdrawer = val
-
     def getisready(self):
         return self.isready
-    
-    def getisdrawer(self):
-        return self.isdrawer
 
     def getinfo(self):
         infoobj = {
             'PLAYER': self.player.getinfo(),
             'SCORE': self.score,
             'ISREADY': self.isready,
-            'ISDRAWER': self.isdrawer,
             'ENTERTM': self.entertm
         }
         return infoobj
+    
+    def addscore(self, score):
+        self.score += score
+    
+    def getscore(self):
+        return self.score
 
 
 class room:
-
     def __init__(self):
         self.id = roomidgenerator().getnewid()
         self.pwd = None
@@ -60,10 +63,15 @@ class room:
         self.maxplayers = 0
         self.maxviewers = 9999999
         self.answer = None
+        self.hint = None
+        self.lastquestionidx = -1
         self.history = []
         self.roundstarted = False
         self.roundstarttm = 0
         self.roundcorrectplayers = []
+        self.drawerroundscore = 0
+        self.ismatchover = False
+        # self.onclientdisconnected = None
     
     def playercount(self):
         return len(self.players)
@@ -88,7 +96,7 @@ class room:
         return stat.player.id == c.id
     
     def refreshrank(self):
-        pass
+        self.rank = [stat for _, stat in self.players.items()].sort(key=lambda x: x.score, reverse=True)
 
     def updateplayersequence(self):
         self.playersequence = [v for _, v in self.players.items()]
@@ -99,6 +107,10 @@ class room:
         self.roundstarted = True
         self.roundstarttm = time.time()
         self.roundcorrectplayers.clear()
+        self.drawerroundscore = 0
+        question, self.lastquestionidx = questionmgr().getrndquestion(self.lastquestionidx)
+        self.answer = question['title']
+        self.hint = question['hint']
 
     def isinround(self):
         return self.roundstarted
@@ -109,6 +121,11 @@ class room:
         self.refreshrank()
         self.history.clear()
         self.roundstarttm = 0
+        for _, player in self.players.items():
+            player.setready(False)
+    
+    def matchover(self):
+        self.ismatchover = True
 
     def playeranswercorrect(self, player):
         if player not in self.players:
@@ -116,6 +133,36 @@ class room:
         if player in self.roundcorrectplayers:
             return
         self.roundcorrectplayers.append(player)
+        playerstat = self.players[player]
+        correctplayernum = len(self.roundcorrectplayers)
+        gains = 0
+        if correctplayernum == 0:
+            gains = 10
+        elif correctplayernum == 1:
+            gains = 7
+        elif correctplayernum == 2:
+            gains = 4
+        else:
+            gains = 1
+        playerstat.addscore(gains)
+        s = playerstat.getscore()
+        if self.maxscore < s:
+            self.maxscore = s
+        drawergains = 0
+        self.drawerroundscore += 2
+        drawergains = 2
+        if self.drawerroundscore > 10:
+            drawergains -= self.drawerroundscore - 10
+            self.drawerroundscore = 10
+        drawerstat = self.getdrawerstat()
+        drawerstat.addscore(drawergains)
+        s = drawerstat.getscore()
+        if self.maxscore < s:
+            self.maxscore = s
+        self.refreshrank()
+    
+    def getroundcorrectplayerstatlist(self):
+        return [self.players[i].getinfo() for i in self.roundcorrectplayers]
 
     def joinasplayer(self, player):
         if player in self.players:
@@ -169,14 +216,16 @@ class room:
         return self.players[c]
 
     def getdrawerstat(self):
+        print ("curretndraweridx: ", self.currentdraweridx)
+        print ("len: ", len(self.playersequence))
         player = self.playersequence[self.currentdraweridx%len(self.playersequence)]
         stat = self.players[player]
         return stat
         
     def getplayerinfolist(self):
         l = []
-        for _, status in self.players.items():
-            l.append(status.getinfo())
+        for _, stats in self.players.items():
+            l.append(stats.getinfo())
         return l
 
     def getviewerinfolist(self):
@@ -194,14 +243,25 @@ class room:
         return l
 
     def getroominfo(self):
-        obj = {
-            'ID': self.id,
-            'NAME': self.name,
-            'PLAYERS': self.getplayerinfolist(),
-            'HISTORYDRAWS': None,
-            'ISINROUND': self.roundstarted,
-            'ROUNDINFO': self.getcurrentroundinfo(),
-        }
+        obj = None
+        if not self.isinround:
+            obj = {
+                'ID': self.id,
+                'NAME': self.name,
+                'PLAYERSTATS': self.getplayerinfolist(),
+                'HISTORYDRAWS': None,
+                'ISINROUND': self.roundstarted,
+                'ROUNDINFO': self.getcurrentroundinfo(),
+            }
+        else:
+            obj = {
+                'ID': self.id,
+                'NAME': self.name,
+                'PLAYERSTATS': self.getplayerinfolist(),
+                'HISTORYDRAWS': None,
+                'ISINROUND': self.roundstarted,
+                'ROUNDINFO': None
+            }
         return obj
 
     def getroombriefinfo(self):
@@ -217,20 +277,42 @@ class room:
     
     def getcurrentroundinfo(self):
         obj = {
-            'STARTTM': self.roundstarttm
+            'STARTTM': self.roundstarttm,
+            'DRAWER': self.getdrawerstat().getinfo(),
+            'HINT': self.hint
         }
         return obj
+
+    def getrankinfo(self):
+        return [stat.getinfo() for stat in self.rank]
 
     def isempty(self):
         return (self.playercount() + self.viewercount()) <= 0
 
-    def update(tickcount, tm):
-        pass
+    def update(self, tickcount, tm):
+        if not self.roundstarted:
+            return False
+        
+        t = tm - self.roundstarttm
+        if t >= 120:
+            self.roundover()
+            return True
+        return False
+    
+    # async def broadcastmsg(self, msg):
+    #     l = self.getbroadcastclientlist()
+    #     for c in l:
+    #         try:
+    #             await c.ws.send(msg)
+    #         except websockets.exceptions.ConnectionClosed:
+    #             self.ondisconnected(c.ws, False)
+    #         except:
+    #             pass
     
     def clear(self):
         self.players = set()
         self.viewer = set()
-        self.correctplayers = []
+        self.roundcorrectplayers.clear()
         self.history = []
         self.roundstarted = False
         self.answer = None

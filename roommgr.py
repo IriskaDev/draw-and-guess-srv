@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from singleton import singleton
 from room import room
 
@@ -16,12 +19,14 @@ class roommgr:
         # [(key, value), (key, value), ...]
         self.sortedrooms = []
 
-    def createroom(self, name, maxplayers, maxscore, pwd):
+    # def createroom(self, name, maxplayers, maxscore, pwd=None, onclientdisconnected=None):
+    def createroom(self, name, maxplayers, maxscore, pwd=None):
         r = room()
         r.name = name
         r.maxplayers = maxplayers
         r.maxscore = maxscore
         r.pwd = pwd
+        # r.onclientdisconnected = onclientdisconnected
         self.rooms[r.id] = r
         self.updatesortedrooms()
         return r
@@ -47,3 +52,12 @@ class roommgr:
         r.clear()
         del self.rooms[rid]
         self.updatesortedrooms()
+    
+    def update(self, tickcount, tm):
+        # contains rooms that need process on worker after update
+        l = []
+        for _, r in self.rooms.items():
+            needproc = r.update(tickcount, tm)
+            if needproc:
+                l.append(r)
+        return l

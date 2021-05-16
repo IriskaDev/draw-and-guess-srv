@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import json
 
 def get_resp_onconnected(id):
@@ -92,20 +95,6 @@ def get_resp_send_answer(errcode, iscorrect):
     }
     return json.dumps(resp)
 
-def get_resp_roundstart(errcode):
-    resp = {
-        'PROTO': 'RESP_ROUNDSTART',
-        'ERRCODE': errcode,
-    }
-    return json.dumps(resp)
-
-def get_resp_roundover(errcode):
-    resp = {
-        'PROTO': 'RESP_ROUNDOVER',
-        'ERRCODE': errcode,
-    }
-    return json.dumps(resp)
-
 def get_resp_heartbeat():
     return '{"PROTO": "RESP_HEARTBEAT"}'
 
@@ -163,10 +152,11 @@ def get_broadcast_roundstart(roundinfo):
     }
     return json.dumps(resp)
 
-def get_broadcast_roundover(correctlist):
+def get_broadcast_roundover(correctlist, answer):
     resp = {
         'PROTO': 'BROADCAST_ROUNDOVER',
-        'CORRECTPLAYERS': correctlist,
+        'CORRECTPLAYERSTATS': correctlist,
+        'ANSWER': answer,
     }
     return json.dumps(resp)
 
@@ -182,6 +172,20 @@ def get_broadcast_answer_wrong(playerinfo, answer):
         'PROTO': 'BROADCAST_ANSWER_WRONG',
         'PLAYER': playerinfo,
         'ANSWER': answer
+    }
+    return json.dumps(resp)
+
+def get_broadcast_player_stat_update(playerstats):
+    resp = {
+        'PROTO': 'BROADCAST_PLAYER_STAT_UPDATE',
+        'PLAYERSTATS': playerstats
+    }
+    return json.dumps(resp)
+
+def get_broadcast_match_over(rank):
+    resp = {
+        'PROTO': 'BROADCAST_MATCH_OVER',
+        'RANK': rank
     }
     return json.dumps(resp)
 

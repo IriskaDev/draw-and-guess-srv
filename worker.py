@@ -1,5 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
+import builtins
 import sys
 import asyncio
 import websockets
@@ -8,7 +10,6 @@ import math
 import time
 import protoassembler
 from configmgr import configmgr
-from singleton import singleton
 from room import room
 from client import client
 from roommgr import roommgr
@@ -26,6 +27,14 @@ async def broadcastmsg(clientlist, msg):
             ondisconnected(c.ws, False)
         except:
             pass
+
+async def processroundover(r):
+    r.roundover()
+    clist = r.getbroadcastclientlist()
+    await broadcastmsg(clist, protoassembler.get_broadcast_roundover(r.getroundcorrectplayerstatlist(), r.answer))
+    if r.ismatchover:
+        await broadcastmsg(clist, protoassembler.get_broadcast_match_over(r.getrankinfo()))
+
 
 async def onregister(c, req):
     if 'NAME' not in req:
@@ -176,10 +185,10 @@ async def onreadyforplay(c, req):
         # broadcast roundstart
         # tell the drawer what answer is
         broadcastmsg(l, protoassembler.get_broadcast_roundstart(r.getcurrentroundinfo()))
-        drawer = r.getdrawer()
+        drawerstat = r.getdrawerstat()
         answer = r.getanswer()
         try:
-            drawer.ws.send(protoassembler.get_notify_round_answer(answer))
+            drawerstat.player.ws.send(protoassembler.get_notify_round_answer(answer))
         except:
             # if any thing wrong, should stop round
             pass
@@ -211,12 +220,9 @@ async def quitroom(c, req):
         await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_player_exit(c))
 
     if isdrawer and r.isinround():
-        # should stop round
-        r.roundover()
-        # broadcast things
+        await processroundover(r)
 
     if r.isempty():
-        # remove room
         roommgr().removeroom(r.id)
 
 
@@ -316,8 +322,11 @@ async def send_answer(c, req):
         await broadcastmsg(l, protoassembler.get_broadcast_answer_wrong(c.getinfo(), answer))
     else:
         r.playeranswercorrect(c)
+        playerstat = r.getplayerstat(c)
+        drawerstat = r.getdrawstat()
         await c.ws.send(protoassembler.get_resp_send_answer(0, True))
         await broadcastmsg(l, protoassembler.get_broadcast_answer_correct(c.getinfo()))
+        await broadcastmsg(l, protoassembler.get_broadcast_player_stat_update([playerstat.getinfo(), drawerstat.getinfo()]))
 
 async def draw(c, req):
     pass
@@ -368,8 +377,7 @@ async def ondisconnected(ws, quitroom=True):
                     await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_player_exit(c))
 
                 if isdrawer and r.isinround():
-                    r.roundover()
-                    # boradcast
+                    await processroundover(r)
 
                 if r.isempty():
                     roommgr().removeroom(r.id)
@@ -404,9 +412,11 @@ async def handler(ws, _):
     finally:
         await ondisconnected(ws)
 
-def update(tickcount, tm):
-    # print ("tick ", tickcount, tm)
-    pass
+async def update(tickcount, tm):
+    # print (tickcount, tm)
+    l = roommgr().update(tickcount, tm)
+    for r in l:
+        await processroundover(r)
 
 async def ticker(delay):
     i = 0
@@ -418,7 +428,7 @@ async def ticker(delay):
 async def runticker():
     async for i in ticker(configmgr().gettickinterval()):
         tm = time.time()
-        update(i, tm)
+        await update(i, tm)
 
 def start():
     port = int(configmgr().getport())
