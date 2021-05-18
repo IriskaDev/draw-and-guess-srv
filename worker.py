@@ -159,6 +159,10 @@ async def joinroom_asplayer(c, req):
         await c.ws.send(protoassembler.get_resp_join_room_as_player(6, None))
         return
     
+    if r.isplayerfull():
+        await c.ws.send(protoassembler.get_resp_join_room_as_player(7, None))
+        return
+    
     l = r.getbroadcastclientlist()
     r.joinasplayer(c)
     await c.ws.send(protoassembler.get_resp_join_room_as_player(0, r.getroominfo()))
