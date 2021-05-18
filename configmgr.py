@@ -32,4 +32,14 @@ class configmgr:
             return 1
         return float(self.dataobj["tick-interval"])
     
+    def getminplayers(self):
+        if self.dataobj is None:
+            return 2
+        return int(self.dataobj["min-players"])
+    
+    def getroundtimelimit(self):
+        if self.dataobj is None:
+            return 120
+        return float(self.dataobj['round-time-limit'])
+    
 

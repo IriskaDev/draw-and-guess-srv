@@ -1,5 +1,7 @@
 {
     "srv-ip": "127.0.0.1",
     "srv-port": 12013,
-    "tick-interval": 0.1
+    "tick-interval": 0.1,
+    "min-players": 2,
+    "round-time-limit": 120
 }

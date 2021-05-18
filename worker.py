@@ -19,6 +19,39 @@ from clientmgr import clientmgr
 CLIENTS = dict()
 # NAMES = set()
 
+async def onconnected(ws):
+    print('register ws: ', ws)
+    if ws in CLIENTS:
+        return
+    c = client(ws)
+    CLIENTS[ws] = c
+    await ws.send(protoassembler.get_resp_onconnected(c.id))
+
+async def ondisconnected(ws, quitroom=True):
+    print('unregister ws: ', ws)
+    if ws not in CLIENTS:
+        return
+    c = CLIENTS[ws]
+    if quitroom:
+        if c.room is not None:
+            if roommgr().roomexists(c.room):
+                r = roommgr().getroom(c.room)
+                isviewer = r.clientisviewer(c)
+                isdrawer = r.clientisdrawer(c)
+                r.quitroom(c)
+                if isviewer:
+                    await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_viewer_exit(c))
+                else:
+                    await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_player_exit(c))
+
+                if isdrawer and r.isinround():
+                    await processroundover(r)
+
+                if r.isempty():
+                    roommgr().removeroom(r.id)
+
+    del CLIENTS[ws]
+
 async def broadcastmsg(clientlist, msg):
     for c in clientlist:
         try:
@@ -32,7 +65,7 @@ async def processroundover(r):
     r.roundover()
     clist = r.getbroadcastclientlist()
     await broadcastmsg(clist, protoassembler.get_broadcast_roundover(r.getroundcorrectplayerstatlist(), r.answer))
-    if r.ismatchover:
+    if not r.isinmatch():
         await broadcastmsg(clist, protoassembler.get_broadcast_match_over(r.getrankinfo()))
 
 
@@ -122,6 +155,10 @@ async def joinroom_asplayer(c, req):
             await c.ws.send(protoassembler.get_resp_join_room_as_player(5, None))
             return
     
+    if r.isinmatch():
+        await c.ws.send(protoassembler.get_resp_join_room_as_player(6, None))
+        return
+    
     l = r.getbroadcastclientlist()
     r.joinasplayer(c)
     await c.ws.send(protoassembler.get_resp_join_room_as_player(0, r.getroominfo()))
@@ -167,7 +204,7 @@ async def onreadyforplay(c, req):
         await c.ws.send(protoassembler.get_resp_ready_for_play(2))
         return
     
-    r = roommgr.getroom(c.room)
+    r = roommgr().getroom(c.room)
     if not r.clientinroom(c):
         c.room = None
         await c.ws.send(protoassembler.get_resp_ready_for_play(3))
@@ -177,22 +214,60 @@ async def onreadyforplay(c, req):
         await c.ws.send(protoassembler.get_resp_ready_for_play(4))
         return
     
-    allready = r.setplayerready(c)
+    r.setplayerready(c)
+    await c.ws.send(protoassembler.get_resp_ready_for_play(0))
     l = r.getbroadcastclientlist()
-    await broadcastmsg(l, protoassembler.get_broadcast_player_ready(r.getplayerstat().getinfo()))
-    if allready:
-        # allready means roundstarted
-        # broadcast roundstart
-        # tell the drawer what answer is
-        broadcastmsg(l, protoassembler.get_broadcast_roundstart(r.getcurrentroundinfo()))
-        drawerstat = r.getdrawerstat()
-        answer = r.getanswer()
-        try:
-            drawerstat.player.ws.send(protoassembler.get_notify_round_answer(answer))
-        except:
-            # if any thing wrong, should stop round
-            pass
+    await broadcastmsg(l, protoassembler.get_broadcast_player_ready(r.getplayerstat(c).getinfo()))
+    if r.playercount() >= configmgr().getminplayers() and r.isallready():
+        await broadcastmsg(l, protoassembler.get_broadcast_nextdrawer(r.getdrawerstat().getinfo()))
 
+async def startround(c, req):
+    if c.room is None:
+        await c.ws.send(protoassembler.get_resp_start_round(1))
+        return
+
+    if not roommgr().roomexists(c.room):
+        c.room = None
+        await c.ws.send(protoassembler.get_resp_start_round(2))
+        return
+
+    r = roommgr().getroom(c.room)
+    if not r.clientinroom(c):
+        c.room = None
+        await c.ws.send(protoassembler.get_resp_start_round(3))
+        return
+    
+    isviewer = r.clientisviewer(c)
+    isdrawer = r.clientisdrawer(c)
+    if isviewer or not isdrawer:
+        await c.ws.send(protoassembler.get_resp_start_round(4))
+        return
+    
+    if r.isinround():
+        await c.ws.send(protoassembler.get_resp_start_round(5))
+        return
+    
+    if not r.isinmatch():
+        await c.ws.send(protoassembler.get_resp_start_round(6))
+        return
+    
+    if not r.isallready():
+        await c.ws.send(protoassembler.get_resp_start_round(7))
+        return
+    
+    r.startround()
+    await c.ws.send(protoassembler.get_resp_start_round(0))
+    l = r.getbroadcastclientlist()
+    await broadcastmsg(l, protoassembler.get_broadcast_roundstart(r.getcurrentroundinfo()))
+    drawerstat = r.getdrawerstat()
+    answer = r.getanswer()
+    try:
+        await drawerstat.player.ws.send(protoassembler.get_notify_round_answer(answer))
+    except websockets.exceptions.ConnectionClosed:
+        ondisconnected(drawerstat.player.ws, True)
+        processroundover(r)
+    except:
+        processroundover(r)
 
 async def quitroom(c, req):
     if c.room is None:
@@ -224,43 +299,6 @@ async def quitroom(c, req):
 
     if r.isempty():
         roommgr().removeroom(r.id)
-
-
-async def get_room_player_list(c, req):
-    if c.room is None:
-        await c.ws.send(protoassembler.get_resp_get_room_player_list(1, None))
-        return
-    
-    if not roommgr().roomexists(c.room):
-        c.room = None
-        await c.ws.send(protoassembler.get_resp_get_room_player_list(2, None))
-        return
-
-    r = roommgr().getroom(c.room)
-    if not r.clientinroom(c):
-        c.room = None
-        await c.ws.send(protoassembler.get_resp_get_room_player_list(3, None))
-        return
-    
-    await c.ws.send(protoassembler.get_resp_get_room_player_list(0, r.getplayerinfolist()))
-    
-async def get_room_viewer_list(c, req):
-    if c.room is None:
-        await c.ws.send(protoassembler.get_resp_get_room_viewer_list(1, None))
-        return
-    
-    if not roommgr().roomexists(c.room):
-        c.room = None
-        await c.ws.send(protoassembler.get_resp_get_room_viewer_list(2, None))
-        return
-    
-    r = roommgr().getroom(c.room)
-    if not r.clientinroom(c):
-        c.room = None
-        await c.ws.send(protoassembler.get_resp_get_room_viewer_list(3, None))
-        return
-    
-    await c.ws.send(protoassembler.get_resp_get_room_viewer_list(0, r.getviewerinfolist()))
 
 async def send_chat(c, req):
     if c.room is None:
@@ -341,48 +379,14 @@ HANDLERS = {
     'REQ_JOIN_ROOM_AS_PLAYER':  joinroom_asplayer,
     'REQ_JOIN_ROOM_AS_VIEWER':  joinroom_asviewer,
     'REQ_READY_FOR_PLAY':       onreadyforplay,
+    'REQ_START_ROUND':          startround,
     'REQ_QUIT_ROOM':            quitroom,
-    'REQ_GET_ROOM_PLAYER_LIST': get_room_player_list,
-    'REQ_GET_ROOM_VIEWER_LIST': get_room_viewer_list,
     'REQ_SEND_CHAT':            send_chat,
     'REQ_SEND_ANSWER':          send_answer,
     'REQ_DRAW':                 draw,
 
     'REQ_HEARTBEAT':            heartbeat,
 }
-
-async def onconnected(ws):
-    print('register ws: ', ws)
-    if ws in CLIENTS:
-        return
-    c = client(ws)
-    CLIENTS[ws] = c
-    await ws.send(protoassembler.get_resp_onconnected(c.id))
-
-async def ondisconnected(ws, quitroom=True):
-    print('unregister ws: ', ws)
-    if ws not in CLIENTS:
-        return
-    c = CLIENTS[ws]
-    if quitroom:
-        if c.room is not None:
-            if roommgr().roomexists(c.room):
-                r = roommgr().getroom(c.room)
-                isviewer = r.clientisviewer(c)
-                isdrawer = r.clientisdrawer(c)
-                r.quitroom(c)
-                if isviewer:
-                    await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_viewer_exit(c))
-                else:
-                    await broadcastmsg(r.getbroadcastclientlist(), protoassembler.get_broadcast_player_exit(c))
-
-                if isdrawer and r.isinround():
-                    await processroundover(r)
-
-                if r.isempty():
-                    roommgr().removeroom(r.id)
-
-    del CLIENTS[ws]
 
 async def onmessage(ws, msg):
     print(ws, msg)
@@ -401,7 +405,6 @@ async def onmessage(ws, msg):
     except:
         await ws.send(protoassembler.get_resp_handle_req_failed())
         print('handle message failed: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
-
 
 async def handler(ws, _):
     await onconnected(ws)

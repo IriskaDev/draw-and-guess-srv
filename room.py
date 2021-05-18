@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from configmgr import configmgr
 import time
 
 import websockets
@@ -55,7 +56,8 @@ class room:
         self.maxscore = 0
         # player - playerstatus
         self.players = dict()
-        self.playersequence = []
+        # playerstatus
+        self.playerstatsequence = []
         self.currentdraweridx = 0
         self.rank = []
         # container of client object
@@ -70,7 +72,8 @@ class room:
         self.roundstarttm = 0
         self.roundcorrectplayers = []
         self.drawerroundscore = 0
-        self.ismatchover = False
+        # self.ismatchover = False
+        self.matchstarted = False
         # self.onclientdisconnected = None
     
     def playercount(self):
@@ -92,15 +95,19 @@ class room:
         return c in self.viewers
     
     def clientisdrawer(self, c):
-        stat = self.playersequence[self.currentdraweridx%len(self.playersequence)]
+        stat = self.playerstatsequence[self.currentdraweridx%len(self.playerstatsequence)]
         return stat.player.id == c.id
     
     def refreshrank(self):
         self.rank = [stat for _, stat in self.players.items()].sort(key=lambda x: x.score, reverse=True)
 
-    def updateplayersequence(self):
-        self.playersequence = [v for _, v in self.players.items()]
-        self.playersequence.sort(key=lambda x: x.entertm)
+    def updateplayerstatsequence(self):
+        self.playerstatsequence = [v for _, v in self.players.items()]
+        self.playerstatsequence.sort(key=lambda x: x.entertm)
+
+    def matchstart(self):
+        self.matchstarted = True
+        self.roundstart()
     
     def roundstart(self):
         # select an answer
@@ -115,17 +122,21 @@ class room:
     def isinround(self):
         return self.roundstarted
 
+    def isinmatch(self):
+        return self.matchstarted
+
     def roundover(self):
         self.roundstarted = False
         self.currentdraweridx += 1
         self.refreshrank()
         self.history.clear()
         self.roundstarttm = 0
+
+    def matchover(self):
+        self.matchstarted = False
         for _, player in self.players.items():
             player.setready(False)
     
-    def matchover(self):
-        self.ismatchover = True
 
     def playeranswercorrect(self, player):
         if player not in self.players:
@@ -171,7 +182,7 @@ class room:
             return
         self.players[player] = playerstatus(player)
         player.room = self.id
-        self.updateplayersequence()
+        self.updateplayerstatsequence()
 
     def joinasviewer(self, viewer):
         if viewer in self.viewers:
@@ -190,23 +201,23 @@ class room:
     def setpwd(self, pwd):
         self.pwd = pwd
     
-    def setplayerready(self, player, ready):
+    def setplayerready(self, player):
         status = self.players[player]
         status.setready(True)
+    
+    def isallready(self):
         allready = True
         for _, s in self.players.items():
             if not s.getisready():
                 allready = False
                 break
-        if allready:
-            self.roundstart()
         return allready
     
     def quitroom(self, c):
         c.room = None
         if c in self.players:
             del self.players[c]
-            self.updateplayersequence()
+            self.updateplayerstatsequence()
         if c in self.viewers:
             self.viewers.remove(c)
 
@@ -216,10 +227,7 @@ class room:
         return self.players[c]
 
     def getdrawerstat(self):
-        print ("curretndraweridx: ", self.currentdraweridx)
-        print ("len: ", len(self.playersequence))
-        player = self.playersequence[self.currentdraweridx%len(self.playersequence)]
-        stat = self.players[player]
+        stat = self.playerstatsequence[self.currentdraweridx%len(self.playerstatsequence)]
         return stat
         
     def getplayerinfolist(self):
@@ -244,13 +252,14 @@ class room:
 
     def getroominfo(self):
         obj = None
-        if not self.isinround:
+        if self.isinround():
             obj = {
                 'ID': self.id,
                 'NAME': self.name,
                 'PLAYERSTATS': self.getplayerinfolist(),
                 'HISTORYDRAWS': None,
                 'ISINROUND': self.roundstarted,
+                'ISINMATCH': self.matchstarted,
                 'ROUNDINFO': self.getcurrentroundinfo(),
             }
         else:
@@ -260,6 +269,7 @@ class room:
                 'PLAYERSTATS': self.getplayerinfolist(),
                 'HISTORYDRAWS': None,
                 'ISINROUND': self.roundstarted,
+                'ISINMATCH': self.matchstarted,
                 'ROUNDINFO': None
             }
         return obj
@@ -294,7 +304,7 @@ class room:
             return False
         
         t = tm - self.roundstarttm
-        if t >= 120:
+        if t >= configmgr().getroundtimelimit():
             self.roundover()
             return True
         return False

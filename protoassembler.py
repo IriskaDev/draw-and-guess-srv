@@ -64,6 +64,13 @@ def get_resp_ready_for_play(errcode):
     }
     return json.dumps(resp)
 
+def get_resp_start_round(errcode):
+    resp = {
+        'PROTO': 'RESP_START_ROUND',
+        'ERRCODE': errcode
+    }
+    return json.dumps(resp)
+
 def get_resp_quit_room(errcode):
     resp = {
         'PROTO': 'RESP_QUIT_ROOM',
@@ -145,6 +152,13 @@ def get_broadcast_viewer_exit(c):
     }
     return json.dumps(resp)
 
+def get_broadcast_nextdrawer(drawerstat):
+    resp = {
+        'PROTO': 'BROADCAST_NEXTDRAWER',
+        'DRAWERSTAT': drawerstat,
+    }
+    return json.dumps(resp)
+
 def get_broadcast_roundstart(roundinfo):
     resp = {
         'PROTO': 'BROADCAST_ROUNDSTART',
@@ -156,7 +170,8 @@ def get_broadcast_roundover(correctlist, answer):
     resp = {
         'PROTO': 'BROADCAST_ROUNDOVER',
         'CORRECTPLAYERSTATS': correctlist,
-        'ANSWER': answer,
+        'ANSWER': answer
+        # 'NEXTDRAWERSTAT': nextdrawerstat
     }
     return json.dumps(resp)
 

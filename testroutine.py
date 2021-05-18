@@ -42,44 +42,55 @@ async def test():
 
     printallclientinfo()
 
-    c0 = worker.CLIENTS[wslist[0]]
-    await worker.oncreateroom(c0, {
+    player0 = worker.CLIENTS[wslist[0]]
+    await worker.oncreateroom(player0, {
         'PROTO': 'REQ_CREATE_ROOM',
         'NAME': 'ROOM_1',
         'MAXPLAYERS': 5,
         'MAXSCORE': 120
     })
-    c0.printinfo()
+    player0.printinfo()
     # printallclientinfo()
 
-    c1 = worker.CLIENTS[wslist[1]]
-    await worker.getroomlist(c1, {})
-    await worker.joinroom_asplayer(c1, {
+
+    player1 = worker.CLIENTS[wslist[1]]
+    await worker.getroomlist(player1, {})
+    await worker.joinroom_asplayer(player1, {
         'PROTO': 'REQ_JOIN_ROOM_AS_PLAYER',
         'ROOMID': "1000000"
     })
-    c1.printinfo()
+    player1.printinfo()
 
-    c2 = worker.CLIENTS[wslist[2]]
-    await worker.joinroom_asviewer(c2, {
+    viewer0 = worker.CLIENTS[wslist[2]]
+    await worker.joinroom_asviewer(viewer0, {
         'PROTO': 'REQ_JOIN_ROOM_AS_VIEWER',
         'ROOMID': "1000000"
     })
-    c2.printinfo()
+    viewer0.printinfo()
 
-    c3 = worker.CLIENTS[wslist[3]]
-    await worker.joinroom_asplayer(c3, {
+    player2 = worker.CLIENTS[wslist[3]]
+    await worker.joinroom_asplayer(player2, {
         'PROTO': 'REQ_JOIN_ROOM_AS_PLAYER',
         'ROOMID': "1000000"
     })
-    c3.printinfo()
+    player2.printinfo()
 
-    await worker.quitroom(c3, {})
+    player4 = worker.CLIENTS[wslist[4]]
+    await worker.joinroom_asplayer(player4, {
+        'PROTO': 'REQ_JOIN_ROOM_AS_PLAYER',
+        'ROOMID': "1000000"
+    })
 
-    await worker.getroomlist(c3, {})
+    await worker.onreadyforplay(player0, {'PROTO': 'REQ_READY_FOR_PLAY'})
+    await worker.onreadyforplay(player1, {'PROTO': 'REQ_READY_FOR_PLAY'})
+    # await worker.onreadyforplay(viewer0, {'PROTO': 'REQ_READY_FOR_PLAY'})
+    await worker.onreadyforplay(player2, {'PROTO': 'REQ_READY_FOR_PLAY'})
+    await worker.onreadyforplay(player4, {'PROTO': 'REQ_READY_FOR_PLAY'})
 
-    printallclientinfo()
 
+    # await worker.quitroom(player2, {})
+    # await worker.getroomlist(player2, {})
+    # printallclientinfo()
     # printallclientinfo()
 
 
