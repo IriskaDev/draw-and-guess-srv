@@ -223,6 +223,7 @@ async def onreadyforplay(c, req):
     l = r.getbroadcastclientlist()
     await broadcastmsg(l, protoassembler.get_broadcast_player_ready(r.getplayerstat(c).getinfo()))
     if r.playercount() >= configmgr().getminplayers() and r.isallready():
+        r.matchstart()
         await broadcastmsg(l, protoassembler.get_broadcast_nextdrawer(r.getdrawerstat().getinfo()))
 
 async def startround(c, req):

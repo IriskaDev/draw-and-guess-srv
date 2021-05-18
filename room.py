@@ -107,7 +107,7 @@ class room:
 
     def matchstart(self):
         self.matchstarted = True
-        self.roundstart()
+        # self.roundstart()
     
     def roundstart(self):
         # select an answer
