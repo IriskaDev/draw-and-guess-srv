@@ -2,8 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import asyncio
-from client import client
 from room import room
+from client import client
+from roommgr import roommgr
 import worker
 
 class fakews:
@@ -47,10 +48,12 @@ async def test():
         'PROTO': 'REQ_CREATE_ROOM',
         'NAME': 'ROOM_1',
         'MAXPLAYERS': 5,
-        'MAXSCORE': 120
+        'MATCHOVERSCORE': 20
     })
     player0.printinfo()
     # printallclientinfo()
+
+    r0 = roommgr().getroom("1000000")
 
 
     player1 = worker.CLIENTS[wslist[1]]
@@ -74,9 +77,10 @@ async def test():
         'ROOMID': "1000000"
     })
     player2.printinfo()
+    await worker.quitroom(player2, {})
 
-    player4 = worker.CLIENTS[wslist[4]]
-    await worker.joinroom_asplayer(player4, {
+    player3 = worker.CLIENTS[wslist[4]]
+    await worker.joinroom_asplayer(player3, {
         'PROTO': 'REQ_JOIN_ROOM_AS_PLAYER',
         'ROOMID': "1000000"
     })
@@ -85,14 +89,32 @@ async def test():
     await worker.onreadyforplay(player1, {'PROTO': 'REQ_READY_FOR_PLAY'})
     # await worker.onreadyforplay(viewer0, {'PROTO': 'REQ_READY_FOR_PLAY'})
     await worker.onreadyforplay(player2, {'PROTO': 'REQ_READY_FOR_PLAY'})
-    await worker.onreadyforplay(player4, {'PROTO': 'REQ_READY_FOR_PLAY'})
+    await worker.onreadyforplay(player3, {'PROTO': 'REQ_READY_FOR_PLAY'})
 
 
-    # await worker.quitroom(player2, {})
+    await worker.startround(player0, {'PROTO': 'REQ_START_ROUND'})
+    await worker.send_answer(player3, {
+        'PROTO': 'REQ_SEND_ANSWER',
+        'ANSWER': r0.answer
+    })
+
+    await worker.send_answer(player1, {
+        'PROTO': 'REQ_SEND_ANSWER',
+        'ANSWER': r0.answer
+    })
+
+    await worker.startround(player1, {'PROTO': 'REQ_START_ROUND'})
+    await worker.send_answer(player3, {
+        'PROTO': 'REQ_SEND_ANSWER',
+        'ANSWER': r0.answer
+    })
+    await worker.send_answer(player0, {
+        'PROTO': 'REQ_SEND_ANSWER',
+        'ANSWER': r0.answer
+    })
     # await worker.getroomlist(player2, {})
     # printallclientinfo()
     # printallclientinfo()
-
 
 
 def run():

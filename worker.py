@@ -59,7 +59,7 @@ async def broadcastmsg(clientlist, msg):
         except websockets.exceptions.ConnectionClosed:
             ondisconnected(c.ws, False)
         except:
-            pass
+            print('error: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
 
 async def processroundover(r):
     r.roundover()
@@ -67,6 +67,8 @@ async def processroundover(r):
     await broadcastmsg(clist, protoassembler.get_broadcast_roundover(r.getroundcorrectplayerstatlist(), r.answer))
     if not r.isinmatch():
         await broadcastmsg(clist, protoassembler.get_broadcast_match_over(r.getrankinfo()))
+    else:
+        await broadcastmsg(clist, protoassembler.get_broadcast_nextdrawer(r.getdrawerstat().getinfo()))
 
 
 async def onregister(c, req):
@@ -104,15 +106,15 @@ async def oncreateroom(c, req):
         return
     maxplayers = int(maxplayers)
 
-    if 'MAXSCORE' not in req:
+    if 'MATCHOVERSCORE' not in req:
         await c.ws.send(protoassembler.get_resp_create_room(3, None))
         return
     
-    maxscore = req['MAXSCORE']
-    if type(maxscore) is not int and type(maxscore) is not float:
+    matchoverscore = req['MATCHOVERSCORE']
+    if type(matchoverscore) is not int and type(matchoverscore) is not float:
         await c.ws.send(protoassembler.get_resp_create_room(3, None))
         return
-    maxscore = int(maxscore)
+    matchoverscore = int(matchoverscore)
     
 
     if c.room is not None:
@@ -121,9 +123,9 @@ async def oncreateroom(c, req):
     
     r = None
     if 'PWD' in req:
-        r = roommgr().createroom(rname, maxplayers, maxscore, req['PWD'])
+        r = roommgr().createroom(rname, maxplayers, matchoverscore, req['PWD'])
     else:
-        r = roommgr().createroom(rname, maxplayers, maxscore, None)
+        r = roommgr().createroom(rname, maxplayers, matchoverscore, None)
 
     r.joinasplayer(c)
     await c.ws.send(protoassembler.get_resp_create_room(0, r.getroombriefinfo()))
@@ -260,7 +262,7 @@ async def startround(c, req):
         await c.ws.send(protoassembler.get_resp_start_round(7))
         return
     
-    r.startround()
+    r.roundstart()
     await c.ws.send(protoassembler.get_resp_start_round(0))
     l = r.getbroadcastclientlist()
     await broadcastmsg(l, protoassembler.get_broadcast_roundstart(r.getcurrentroundinfo()))
@@ -269,10 +271,12 @@ async def startround(c, req):
     try:
         await drawerstat.player.ws.send(protoassembler.get_notify_round_answer(answer))
     except websockets.exceptions.ConnectionClosed:
+        print('error: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
         ondisconnected(drawerstat.player.ws, True)
-        processroundover(r)
+        await processroundover(r)
     except:
-        processroundover(r)
+        print('error: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
+        await processroundover(r)
 
 async def quitroom(c, req):
     if c.room is None:
@@ -366,10 +370,12 @@ async def send_answer(c, req):
     else:
         r.playeranswercorrect(c)
         playerstat = r.getplayerstat(c)
-        drawerstat = r.getdrawstat()
+        drawerstat = r.getdrawerstat()
         await c.ws.send(protoassembler.get_resp_send_answer(0, True))
         await broadcastmsg(l, protoassembler.get_broadcast_answer_correct(c.getinfo()))
         await broadcastmsg(l, protoassembler.get_broadcast_player_stat_update([playerstat.getinfo(), drawerstat.getinfo()]))
+        if r.isallplayercorrect():
+            await processroundover(r)
 
 async def draw(c, req):
     pass

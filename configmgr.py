@@ -41,5 +41,10 @@ class configmgr:
         if self.dataobj is None:
             return 120
         return float(self.dataobj['round-time-limit'])
+
+    def getquestionfilepath(self):
+        if self.dataobj is None:
+            return ""
+        return str(self.dataobj['question-file-path'])
     
 

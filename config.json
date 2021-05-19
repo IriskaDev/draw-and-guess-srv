@@ -3,5 +3,6 @@
     "srv-port": 12013,
     "tick-interval": 0.1,
     "min-players": 2,
-    "round-time-limit": 120
+    "round-time-limit": 120,
+    "question-file-path": "./questions.json"
 }

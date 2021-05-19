@@ -4,7 +4,7 @@
 from configmgr import configmgr
 import time
 
-import websockets
+# import websockets
 from singleton import singleton
 from questionsmgr import questionmgr
 
@@ -53,7 +53,8 @@ class room:
         self.pwd = None
         self.name = ""
         # container of client object
-        self.maxscore = 0
+        self.matchoverscore = 0
+        self.maxplayerscore = 0
         # player - playerstatus
         self.players = dict()
         # playerstatus
@@ -75,6 +76,7 @@ class room:
         # self.ismatchover = False
         self.matchstarted = False
         # self.onclientdisconnected = None
+        self.joinidx = 0
     
     def playercount(self):
         return len(self.players)
@@ -99,18 +101,13 @@ class room:
         return stat.player.id == c.id
     
     def refreshrank(self):
-        self.rank = [stat for _, stat in self.players.items()].sort(key=lambda x: x.score, reverse=True)
-
-    def updateplayerstatsequence(self):
-        self.playerstatsequence = [v for _, v in self.players.items()]
-        self.playerstatsequence.sort(key=lambda x: x.entertm)
+        self.rank = [stat for _, stat in self.players.items()]
+        self.rank.sort(key=lambda x: x.score, reverse=True)
 
     def matchstart(self):
         self.matchstarted = True
-        # self.roundstart()
     
     def roundstart(self):
-        # select an answer
         self.roundstarted = True
         self.roundstarttm = time.time()
         self.roundcorrectplayers.clear()
@@ -131,12 +128,13 @@ class room:
         self.refreshrank()
         self.history.clear()
         self.roundstarttm = 0
+        if self.maxplayerscore >= self.matchoverscore:
+            self.matchover()
 
     def matchover(self):
         self.matchstarted = False
         for _, player in self.players.items():
             player.setready(False)
-    
 
     def playeranswercorrect(self, player):
         if player not in self.players:
@@ -147,18 +145,18 @@ class room:
         playerstat = self.players[player]
         correctplayernum = len(self.roundcorrectplayers)
         gains = 0
-        if correctplayernum == 0:
+        if correctplayernum == 1:
             gains = 10
-        elif correctplayernum == 1:
-            gains = 7
         elif correctplayernum == 2:
+            gains = 7
+        elif correctplayernum == 3:
             gains = 4
         else:
             gains = 1
         playerstat.addscore(gains)
         s = playerstat.getscore()
-        if self.maxscore < s:
-            self.maxscore = s
+        if self.maxplayerscore < s:
+            self.maxplayerscore = s
         drawergains = 0
         self.drawerroundscore += 2
         drawergains = 2
@@ -168,9 +166,12 @@ class room:
         drawerstat = self.getdrawerstat()
         drawerstat.addscore(drawergains)
         s = drawerstat.getscore()
-        if self.maxscore < s:
-            self.maxscore = s
+        if self.maxplayerscore < s:
+            self.maxplayerscore = s
         self.refreshrank()
+    
+    def isallplayercorrect(self):
+        return (len(self.players) - 1) == len(self.roundcorrectplayers)
     
     def getroundcorrectplayerstatlist(self):
         return [self.players[i].getinfo() for i in self.roundcorrectplayers]
@@ -180,9 +181,10 @@ class room:
             return
         if player in self.viewers:
             return
-        self.players[player] = playerstatus(player)
+        stat = playerstatus(player)
+        self.players[player] = stat
         player.room = self.id
-        self.updateplayerstatsequence()
+        self.playerstatsequence.append(stat)
 
     def joinasviewer(self, viewer):
         if viewer in self.viewers:
@@ -216,8 +218,12 @@ class room:
     def quitroom(self, c):
         c.room = None
         if c in self.players:
+            stat = self.players[c]
+            if stat in self.playerstatsequence:
+                self.playerstatsequence.remove(stat)
+            if c in self.roundcorrectplayers:
+                self.roundcorrectplayers.remove(c)
             del self.players[c]
-            self.updateplayerstatsequence()
         if c in self.viewers:
             self.viewers.remove(c)
 
@@ -305,7 +311,6 @@ class room:
         
         t = tm - self.roundstarttm
         if t >= configmgr().getroundtimelimit():
-            self.roundover()
             return True
         return False
     

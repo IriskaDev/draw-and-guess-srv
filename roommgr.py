@@ -19,12 +19,12 @@ class roommgr:
         # [(key, value), (key, value), ...]
         self.sortedrooms = []
 
-    # def createroom(self, name, maxplayers, maxscore, pwd=None, onclientdisconnected=None):
-    def createroom(self, name, maxplayers, maxscore, pwd=None):
+    # def createroom(self, name, maxplayers, matchoverscore, pwd=None, onclientdisconnected=None):
+    def createroom(self, name, maxplayers, matchoverscore, pwd=None):
         r = room()
         r.name = name
         r.maxplayers = maxplayers
-        r.maxscore = maxscore
+        r.matchoverscore = matchoverscore
         r.pwd = pwd
         # r.onclientdisconnected = onclientdisconnected
         self.rooms[r.id] = r
