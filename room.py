@@ -50,6 +50,7 @@ class playerstatus:
 class room:
     def __init__(self):
         self.id = roomidgenerator().getnewid()
+        self.icon = None
         self.pwd = None
         self.name = ""
         # container of client object
@@ -261,6 +262,7 @@ class room:
         if self.isinround():
             obj = {
                 'ID': self.id,
+                'ICON': self.icon,
                 'NAME': self.name,
                 'PLAYERSTATS': self.getplayerinfolist(),
                 'HISTORYDRAWS': None,
@@ -271,6 +273,7 @@ class room:
         else:
             obj = {
                 'ID': self.id,
+                'ICON': self.icon,
                 'NAME': self.name,
                 'PLAYERSTATS': self.getplayerinfolist(),
                 'HISTORYDRAWS': None,
@@ -283,6 +286,7 @@ class room:
     def getroombriefinfo(self):
         obj = {
             'ID': self.id,
+            'ICON': self.icon,
             'NAME': self.name,
             'PLAYERCOUNT': self.playercount(),
             'VIEWERCOUNT': self.viewercount(),

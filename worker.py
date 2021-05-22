@@ -96,36 +96,45 @@ async def oncreateroom(c, req):
         await c.ws.send(protoassembler.get_resp_create_room(1, None))
         return
     
-    if 'MAXPLAYERS' not in req:
+    if 'ICON' not in req:
         await c.ws.send(protoassembler.get_resp_create_room(2, None))
+        return
+
+    ricon = req['ICON']
+    if type(ricon) is not str:
+        await c.ws.send(protoassembler.get_resp_create_room(2, None))
+        return
+    
+    if 'MAXPLAYERS' not in req:
+        await c.ws.send(protoassembler.get_resp_create_room(3, None))
         return
 
     maxplayers = req['MAXPLAYERS']
     if type(maxplayers) is not int and type(maxplayers) is not float:
-        await c.ws.send(protoassembler.get_resp_create_room(2, None))
+        await c.ws.send(protoassembler.get_resp_create_room(3, None))
         return
     maxplayers = int(maxplayers)
 
     if 'MATCHOVERSCORE' not in req:
-        await c.ws.send(protoassembler.get_resp_create_room(3, None))
+        await c.ws.send(protoassembler.get_resp_create_room(4, None))
         return
     
     matchoverscore = req['MATCHOVERSCORE']
     if type(matchoverscore) is not int and type(matchoverscore) is not float:
-        await c.ws.send(protoassembler.get_resp_create_room(3, None))
+        await c.ws.send(protoassembler.get_resp_create_room(4, None))
         return
     matchoverscore = int(matchoverscore)
     
 
     if c.room is not None:
-        await c.ws.send(protoassembler.get_resp_create_room(4, None))
+        await c.ws.send(protoassembler.get_resp_create_room(5, None))
         return
     
     r = None
     if 'PWD' in req:
-        r = roommgr().createroom(rname, maxplayers, matchoverscore, req['PWD'])
+        r = roommgr().createroom(rname, ricon, maxplayers, matchoverscore, req['PWD'])
     else:
-        r = roommgr().createroom(rname, maxplayers, matchoverscore, None)
+        r = roommgr().createroom(rname, ricon, maxplayers, matchoverscore, None)
 
     r.joinasplayer(c)
     await c.ws.send(protoassembler.get_resp_create_room(0, r.getroombriefinfo()))

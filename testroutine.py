@@ -47,6 +47,7 @@ async def test():
     await worker.oncreateroom(player0, {
         'PROTO': 'REQ_CREATE_ROOM',
         'NAME': 'ROOM_1',
+        'ICON': '10001',
         'MAXPLAYERS': 5,
         'MATCHOVERSCORE': 20
     })
