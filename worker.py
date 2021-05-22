@@ -229,13 +229,39 @@ async def onreadyforplay(c, req):
         await c.ws.send(protoassembler.get_resp_ready_for_play(4))
         return
     
-    r.setplayerready(c)
+    r.setplayerready(c, True)
     await c.ws.send(protoassembler.get_resp_ready_for_play(0))
     l = r.getbroadcastclientlist()
     await broadcastmsg(l, protoassembler.get_broadcast_player_ready(r.getplayerstat(c).getinfo()))
     if r.playercount() >= configmgr().getminplayers() and r.isallready():
         r.matchstart()
         await broadcastmsg(l, protoassembler.get_broadcast_nextdrawer(r.getdrawerstat().getinfo()))
+
+async def oncancelready(c, req):
+    if c.room is None:
+        await c.ws.send(protoassembler.get_resp_cancel_ready(1))
+        return
+
+    if not roommgr().roomexists(c.room):
+        c.room = None
+        await c.ws.send(protoassembler.get_resp_cancel_ready(2))
+        return
+    
+    r = roommgr().getroom(c.room)
+    if not r.clientinroom(c):
+        c.room = None
+        await c.ws.send(protoassembler.get_resp_cancel_ready(3))
+        return
+    
+    if r.clientisviewer(c):
+        await c.ws.send(protoassembler.get_resp_cancel_ready(4))
+        return
+    
+    r.setplayerready(c, False)
+    await c.ws.send(protoassembler.get_resp_cancel_ready(0))
+    l = r.getbroadcastclientlist()
+    await broadcastmsg(l, protoassembler.get_broadcast_player_cancel_ready(r.getplayerstat(c).getinfo()))
+    
 
 async def startround(c, req):
     if c.room is None:
@@ -399,6 +425,7 @@ HANDLERS = {
     'REQ_JOIN_ROOM_AS_PLAYER':  joinroom_asplayer,
     'REQ_JOIN_ROOM_AS_VIEWER':  joinroom_asviewer,
     'REQ_READY_FOR_PLAY':       onreadyforplay,
+    'REQ_CANCEL_READY':         oncancelready,
     'REQ_START_ROUND':          startround,
     'REQ_QUIT_ROOM':            quitroom,
     'REQ_SEND_CHAT':            send_chat,

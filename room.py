@@ -204,9 +204,9 @@ class room:
     def setpwd(self, pwd):
         self.pwd = pwd
     
-    def setplayerready(self, player):
+    def setplayerready(self, player, ready):
         status = self.players[player]
-        status.setready(True)
+        status.setready(ready)
     
     def isallready(self):
         allready = True

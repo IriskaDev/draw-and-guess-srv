@@ -64,6 +64,13 @@ def get_resp_ready_for_play(errcode):
     }
     return json.dumps(resp)
 
+def get_resp_cancel_ready(errcode):
+    resp = {
+        'PROTO': 'RESP_CANCEL_READY',
+        'ERRCODE': errcode
+    }
+    return json.dumps(resp)
+
 def get_resp_start_round(errcode):
     resp = {
         'PROTO': 'RESP_START_ROUND',
@@ -127,6 +134,13 @@ def get_broadcast_player_joined(statinfo):
 def get_broadcast_player_ready(statinfo):
     resp = {
         'PROTO': 'BROADCAST_PLAYER_READY',
+        'PLAYERSTAT': statinfo
+    }
+    return json.dumps(resp)
+
+def get_broadcast_player_cancel_ready(statinfo):
+    resp = {
+        'PROTO': 'BROADCAST_PLAYER_CANCEL_READY',
         'PLAYERSTAT': statinfo
     }
     return json.dumps(resp)

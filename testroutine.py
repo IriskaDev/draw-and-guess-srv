@@ -88,7 +88,11 @@ async def test():
 
     await worker.onreadyforplay(player0, {'PROTO': 'REQ_READY_FOR_PLAY'})
     await worker.onreadyforplay(player1, {'PROTO': 'REQ_READY_FOR_PLAY'})
+    await worker.oncancelready(player1, {'PROTO': 'REQ_CANCEL_PLAY'})
+    await worker.onreadyforplay(player1, {'PROTO': 'REQ_READY_FOR_PLAY'})
+
     # await worker.onreadyforplay(viewer0, {'PROTO': 'REQ_READY_FOR_PLAY'})
+
     await worker.onreadyforplay(player2, {'PROTO': 'REQ_READY_FOR_PLAY'})
     await worker.onreadyforplay(player3, {'PROTO': 'REQ_READY_FOR_PLAY'})
 
@@ -113,6 +117,7 @@ async def test():
         'PROTO': 'REQ_SEND_ANSWER',
         'ANSWER': r0.answer
     })
+
     # await worker.getroomlist(player2, {})
     # printallclientinfo()
     # printallclientinfo()
