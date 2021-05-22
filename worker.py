@@ -229,6 +229,10 @@ async def onreadyforplay(c, req):
         await c.ws.send(protoassembler.get_resp_ready_for_play(4))
         return
     
+    if r.isinmatch():
+        await c.ws.send(protoassembler.get_resp_ready_for_play(5))
+        return
+    
     r.setplayerready(c, True)
     await c.ws.send(protoassembler.get_resp_ready_for_play(0))
     l = r.getbroadcastclientlist()
@@ -255,6 +259,10 @@ async def oncancelready(c, req):
     
     if r.clientisviewer(c):
         await c.ws.send(protoassembler.get_resp_cancel_ready(4))
+        return
+    
+    if r.isinmatch():
+        await c.ws.send(protoassembler.get_resp_cancel_ready(5))
         return
     
     r.setplayerready(c, False)
