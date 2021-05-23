@@ -108,14 +108,17 @@ class room:
     def matchstart(self):
         self.matchstarted = True
     
+    def gennewquestion(self):
+        question, self.lastquestionidx = questionmgr().getrndquestion(self.lastquestionidx)
+        self.answer = question['title']
+        self.hint = question['hint']
+
+    
     def roundstart(self):
         self.roundstarted = True
         self.roundstarttm = time.time()
         self.roundcorrectplayers.clear()
         self.drawerroundscore = 0
-        question, self.lastquestionidx = questionmgr().getrndquestion(self.lastquestionidx)
-        self.answer = question['title']
-        self.hint = question['hint']
 
     def isinround(self):
         return self.roundstarted
@@ -129,6 +132,7 @@ class room:
         self.refreshrank()
         self.history.clear()
         self.roundstarttm = 0
+        self.gennewquestion()
         if self.maxplayerscore >= self.matchoverscore:
             self.matchover()
 

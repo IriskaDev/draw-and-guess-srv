@@ -69,6 +69,18 @@ async def processroundover(r):
         await broadcastmsg(clist, protoassembler.get_broadcast_match_over(r.getrankinfo()))
     else:
         await broadcastmsg(clist, protoassembler.get_broadcast_nextdrawer(r.getdrawerstat().getinfo()))
+        drawerstat = r.getdrawerstat()
+        answer = r.getanswer()
+        try:
+            await drawerstat.player.ws.send(protoassembler.get_notify_round_answer(answer))
+        except websockets.exceptions.connectionclosed:
+            print('error: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
+            ondisconnected(drawerstat.player.ws, True)
+            await processroundover(r)
+        except:
+            print('error: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
+            await processroundover(r)
+
 
 async def onregister(c, req):
     if 'NAME' not in req:
@@ -257,8 +269,21 @@ async def onreadyforplay(c, req):
     l = r.getbroadcastclientlist()
     await broadcastmsg(l, protoassembler.get_broadcast_player_ready(r.getplayerstat(c).getinfo()))
     if r.playercount() >= configmgr().getminplayers() and r.isallready():
+        r.gennewquestion()
         r.matchstart()
         await broadcastmsg(l, protoassembler.get_broadcast_nextdrawer(r.getdrawerstat().getinfo()))
+
+        drawerstat = r.getdrawerstat()
+        answer = r.getanswer()
+        try:
+            await drawerstat.player.ws.send(protoassembler.get_notify_round_answer(answer))
+        except websockets.exceptions.connectionclosed:
+            print('error: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
+            ondisconnected(drawerstat.player.ws, True)
+            await processroundover(r)
+        except:
+            print('error: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
+            await processroundover(r)
 
 async def oncancelready(c, req):
     if c.room is None:
@@ -328,17 +353,7 @@ async def startround(c, req):
     await c.ws.send(protoassembler.get_resp_start_round(0))
     l = r.getbroadcastclientlist()
     await broadcastmsg(l, protoassembler.get_broadcast_roundstart(r.getcurrentroundinfo()))
-    drawerstat = r.getdrawerstat()
-    answer = r.getanswer()
-    try:
-        await drawerstat.player.ws.send(protoassembler.get_notify_round_answer(answer))
-    except websockets.exceptions.ConnectionClosed:
-        print('error: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
-        ondisconnected(drawerstat.player.ws, True)
-        await processroundover(r)
-    except:
-        print('error: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
-        await processroundover(r)
+
 
 async def quitroom(c, req):
     if c.room is None:
@@ -495,6 +510,8 @@ async def update(tickcount, tm):
     l = roommgr().update(tickcount, tm)
     for r in l:
         await processroundover(r)
+
+
 
 async def ticker(delay):
     i = 0
