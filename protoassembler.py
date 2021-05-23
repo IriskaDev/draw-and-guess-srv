@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+from types import resolve_bases
 
 def get_resp_onconnected(id):
     resp = {
@@ -82,6 +83,13 @@ def get_resp_cancel_ready(errcode):
 def get_resp_start_round(errcode):
     resp = {
         'PROTO': 'RESP_START_ROUND',
+        'ERRCODE': errcode
+    }
+    return json.dumps(resp)
+
+def get_resp_skip_round(errcode):
+    resp = {
+        'PROTO': 'RESP_SKIP_ROUND',
         'ERRCODE': errcode
     }
     return json.dumps(resp)
@@ -194,6 +202,12 @@ def get_broadcast_roundover(correctlist, answer):
         'CORRECTPLAYERSTATS': correctlist,
         'ANSWER': answer
         # 'NEXTDRAWERSTAT': nextdrawerstat
+    }
+    return json.dumps(resp)
+
+def get_broadcast_roundskip():
+    resp = {
+        'PROTO': 'BROADCAST_ROUNDSKIP'
     }
     return json.dumps(resp)
 

@@ -118,8 +118,19 @@ async def test():
         'ANSWER': r0.answer
     })
 
-    await worker.startround(player1, {'PROTO': 'REQ_START_ROUND'})
-    await worker.send_answer(player3, {
+    # await worker.startround(player1, {'PROTO': 'REQ_START_ROUND'})
+    # await worker.send_answer(player3, {
+    #     'PROTO': 'REQ_SEND_ANSWER',
+    #     'ANSWER': r0.answer
+    # })
+    # await worker.send_answer(player0, {
+    #     'PROTO': 'REQ_SEND_ANSWER',
+    #     'ANSWER': r0.answer
+    # })
+
+    await worker.skipround(player1, {'PROTO': 'REQ_SKIP_ROUND'})
+    await worker.startround(player3, {'PROTO': 'REQ_START_ROUND'})
+    await worker.send_answer(player1, {
         'PROTO': 'REQ_SEND_ANSWER',
         'ANSWER': r0.answer
     })
@@ -127,6 +138,7 @@ async def test():
         'PROTO': 'REQ_SEND_ANSWER',
         'ANSWER': r0.answer
     })
+
 
     # await worker.getroomlist(player2, {})
     # printallclientinfo()

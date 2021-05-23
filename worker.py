@@ -61,10 +61,13 @@ async def broadcastmsg(clientlist, msg):
         except:
             print('error: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
 
-async def processroundover(r):
+async def processroundover(r, isskip=False):
     r.roundover()
     clist = r.getbroadcastclientlist()
-    await broadcastmsg(clist, protoassembler.get_broadcast_roundover(r.getroundcorrectplayerstatlist(), r.answer))
+    if isskip:
+        await broadcastmsg(clist, protoassembler.get_broadcast_roundskip())
+    else:
+        await broadcastmsg(clist, protoassembler.get_broadcast_roundover(r.getroundcorrectplayerstatlist(), r.answer))
     if not r.isinmatch():
         await broadcastmsg(clist, protoassembler.get_broadcast_match_over(r.getrankinfo()))
     else:
@@ -354,6 +357,41 @@ async def startround(c, req):
     l = r.getbroadcastclientlist()
     await broadcastmsg(l, protoassembler.get_broadcast_roundstart(r.getcurrentroundinfo()))
 
+async def skipround(c, req):
+    if c.room is None:
+        await c.ws.send(protoassembler.get_resp_skip_round(1))
+        return
+
+    if not roommgr().roomexists(c.room):
+        c.room = None
+        await c.ws.send(protoassembler.get_resp_skip_round(2))
+        return
+
+    r = roommgr().getroom(c.room)
+    if not r.clientinroom(c):
+        c.room = None
+        await c.ws.send(protoassembler.get_resp_skip_round(3))
+        return
+    
+    isviewer = r.clientisviewer(c)
+    isdrawer = r.clientisdrawer(c)
+    if isviewer or not isdrawer:
+        await c.ws.send(protoassembler.get_resp_skip_round(4))
+        return
+    
+    if r.isinround():
+        await c.ws.send(protoassembler.get_resp_skip_round(5))
+        return
+    
+    if not r.isinmatch():
+        await c.ws.send(protoassembler.get_resp_skip_round(6))
+        return
+    
+    if not r.isallready():
+        await c.ws.send(protoassembler.get_resp_skip_round(7))
+        return
+    
+    await processroundover(r, True)
 
 async def quitroom(c, req):
     if c.room is None:
@@ -470,6 +508,7 @@ HANDLERS = {
     'REQ_READY_FOR_PLAY':       onreadyforplay,
     'REQ_CANCEL_READY':         oncancelready,
     'REQ_START_ROUND':          startround,
+    'REQ_SKIP_ROUND':           skipround,
     'REQ_QUIT_ROOM':            quitroom,
     'REQ_SEND_CHAT':            send_chat,
     'REQ_SEND_ANSWER':          send_answer,

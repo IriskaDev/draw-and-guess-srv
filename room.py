@@ -112,7 +112,6 @@ class room:
         question, self.lastquestionidx = questionmgr().getrndquestion(self.lastquestionidx)
         self.answer = question['title']
         self.hint = question['hint']
-
     
     def roundstart(self):
         self.roundstarted = True
