@@ -394,12 +394,12 @@ async def send_chat(c, req):
 
 async def send_answer(c, req):
     if c.room is None:
-        c.ws.send(protoassembler.get_resp_send_answer(1, False))
+        await c.ws.send(protoassembler.get_resp_send_answer(1, False))
         return
 
     if not roommgr().roomexists(c.room):
         c.room = None
-        c.ws.send(protoassembler.get_resp_send_answer(2, False))
+        await c.ws.send(protoassembler.get_resp_send_answer(2, False))
         return
     
     r = roommgr().getroom(c.room)

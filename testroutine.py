@@ -99,12 +99,19 @@ async def test():
     await worker.onreadyforplay(player2, {'PROTO': 'REQ_READY_FOR_PLAY'})
     await worker.onreadyforplay(player3, {'PROTO': 'REQ_READY_FOR_PLAY'})
 
+    # await worker.quitroom(player3, {'PROTO': 'REQ_QUIT_ROOM'})
+
 
     await worker.startround(player0, {'PROTO': 'REQ_START_ROUND'})
+    # await worker.quitroom(player0, {'PROTO': 'REQ_QUIT_ROOM'})
     await worker.send_answer(player3, {
         'PROTO': 'REQ_SEND_ANSWER',
         'ANSWER': r0.answer
     })
+
+    # await worker.quitroom(player1, {
+        # 'PROTO': 'REQ_QUIT_ROOM',
+    # })
 
     await worker.send_answer(player1, {
         'PROTO': 'REQ_SEND_ANSWER',
