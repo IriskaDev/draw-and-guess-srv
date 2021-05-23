@@ -41,6 +41,12 @@ class roommgr:
 
     def getroom(self, rid):
         return self.rooms[rid]
+    
+    def getjoinalbleroom(self):
+        for _, r in self.sortedrooms:
+            if not r.isplayerfull() and not r.isinmatch():
+                return r
+        return None
 
     def getsortedroomlist(self, sort = None):
         return [i[1].getroombriefinfo() for i in self.sortedrooms]
@@ -62,3 +68,4 @@ class roommgr:
             if needproc:
                 l.append(r)
         return l
+

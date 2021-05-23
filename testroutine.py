@@ -81,9 +81,12 @@ async def test():
     await worker.quitroom(player2, {})
 
     player3 = worker.CLIENTS[wslist[4]]
-    await worker.joinroom_asplayer(player3, {
-        'PROTO': 'REQ_JOIN_ROOM_AS_PLAYER',
-        'ROOMID': "1000000"
+    # await worker.joinroom_asplayer(player3, {
+    #     'PROTO': 'REQ_JOIN_ROOM_AS_PLAYER',
+    #     'ROOMID': "1000000"
+    # })
+    await worker.joinrandomroom(player3, {
+        'PROTO': 'REQ_JOIN_RANDOM_ROOM',
     })
 
     await worker.onreadyforplay(player0, {'PROTO': 'REQ_READY_FOR_PLAY'})

@@ -70,7 +70,6 @@ async def processroundover(r):
     else:
         await broadcastmsg(clist, protoassembler.get_broadcast_nextdrawer(r.getdrawerstat().getinfo()))
 
-
 async def onregister(c, req):
     if 'NAME' not in req:
         await c.ws.send(protoassembler.get_resp_register(1))
@@ -139,8 +138,24 @@ async def oncreateroom(c, req):
     r.joinasplayer(c)
     await c.ws.send(protoassembler.get_resp_create_room(0, r.getroombriefinfo()))
 
+async def joinrandomroom(c, req):
+    if c.room is not None and roommgr().roomexists(c.room):
+        await c.ws.send(protoassembler.get_resp_join_random_room(1))
+        return
+    r = roommgr().getjoinalbleroom()
+    if r is None:
+        await c.ws.send(protoassembler.get_resp_join_random_room(2))
+        return
+    l = r.getbroadcastclientlist()
+    r.joinasplayer(c)
+    await c.ws.send(protoassembler.get_resp_join_random_room(0, r.getroominfo()))
+    await broadcastmsg(l, protoassembler.get_broadcast_player_joined(r.getplayerstat(c).getinfo()))
 
 async def joinroom_asplayer(c, req):
+    if c.room is not None and roommgr().roomexists(c.room):
+        await c.ws.send(protoassembler.get_resp_join_room_as_player(8))
+        return
+
     if 'ROOMID' not in req:
         await c.ws.send(protoassembler.get_resp_join_room_as_player(1, None))
         return
@@ -180,6 +195,10 @@ async def joinroom_asplayer(c, req):
     await broadcastmsg(l, protoassembler.get_broadcast_player_joined(r.getplayerstat(c).getinfo()))
 
 async def joinroom_asviewer(c, req):
+    if c.room is not None and roommgr().roomexists(c.room):
+        await c.ws.send(protoassembler.get_resp_join_room_as_viewer(6))
+        return
+
     if 'ROOMID' not in req:
         await c.ws.send(protoassembler.get_resp_join_room_as_viewer(1, None))
         return
@@ -430,6 +449,7 @@ HANDLERS = {
     'REQ_REGISTER':             onregister,
     'REQ_GET_ROOM_LIST':        getroomlist,
     'REQ_CREATE_ROOM':          oncreateroom,
+    'REQ_JOIN_RANDOM_ROOM':     joinrandomroom,
     'REQ_JOIN_ROOM_AS_PLAYER':  joinroom_asplayer,
     'REQ_JOIN_ROOM_AS_VIEWER':  joinroom_asviewer,
     'REQ_READY_FOR_PLAY':       onreadyforplay,

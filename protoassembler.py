@@ -40,6 +40,14 @@ def get_resp_create_room(errcode, roominfo):
     }
     return json.dumps(resp)
 
+def get_resp_join_random_room(errcode, roominfo=None):
+    resp = {
+        'PROTO': 'RESP_JOIN_RANDOM_ROOM',
+        'ERRCODE': errcode,
+        'ROOMINFO': roominfo
+    }
+    return json.dumps(resp)
+
 
 def get_resp_join_room_as_player(errcode, roominfo=None):
     resp = {
@@ -225,3 +233,5 @@ def get_notify_round_answer(answer):
         'ANSWER': answer
     }
     return json.dumps(resp)
+
+
