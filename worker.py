@@ -391,6 +391,7 @@ async def skipround(c, req):
         await c.ws.send(protoassembler.get_resp_skip_round(7))
         return
     
+    await c.ws.send(protoassembler.get_resp_skip_round(0))
     await processroundover(r, True)
 
 async def quitroom(c, req):
