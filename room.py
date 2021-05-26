@@ -131,7 +131,6 @@ class room:
         self.refreshrank()
         self.history.clear()
         self.roundstarttm = 0
-        self.gennewquestion()
         if self.maxplayerscore >= self.matchoverscore:
             self.matchover()
 

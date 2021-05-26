@@ -205,9 +205,10 @@ def get_broadcast_roundover(correctlist, answer):
     }
     return json.dumps(resp)
 
-def get_broadcast_roundskip():
+def get_broadcast_roundskip(drawerstat):
     resp = {
-        'PROTO': 'BROADCAST_ROUNDSKIP'
+        'PROTO': 'BROADCAST_ROUNDSKIP',
+        'DRAWERSTAT': drawerstat
     }
     return json.dumps(resp)
 

@@ -62,15 +62,20 @@ async def broadcastmsg(clientlist, msg):
             print('error: \n', sys.exc_info()[0], '\n', sys.exc_info()[1])
 
 async def processroundover(r, isskip=False):
+    olddrawerstat = r.getdrawerstat()
     r.roundover()
     clist = r.getbroadcastclientlist()
     if isskip:
-        await broadcastmsg(clist, protoassembler.get_broadcast_roundskip())
+        await broadcastmsg(clist, protoassembler.get_broadcast_roundskip(olddrawerstat.getinfo()))
     else:
         await broadcastmsg(clist, protoassembler.get_broadcast_roundover(r.getroundcorrectplayerstatlist(), r.answer))
+    
     if not r.isinmatch():
+        # end match
         await broadcastmsg(clist, protoassembler.get_broadcast_match_over(r.getrankinfo()))
     else:
+        # start new round
+        r.gennewquestion()
         await broadcastmsg(clist, protoassembler.get_broadcast_nextdrawer(r.getdrawerstat().getinfo()))
         drawerstat = r.getdrawerstat()
         answer = r.getanswer()
