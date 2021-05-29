@@ -98,6 +98,8 @@ class room:
         return c in self.viewers
     
     def clientisdrawer(self, c):
+        if self.playercount() <= 0:
+            return False
         stat = self.playerstatsequence[self.currentdraweridx%len(self.playerstatsequence)]
         return stat.player.id == c.id
     
@@ -297,6 +299,7 @@ class room:
             'VIEWERCOUNT': self.viewercount(),
             'MAXPLAYER': self.maxplayers,
             'NEEDPWD': self.pwd is not None,
+            'ISINMATCH': self.matchstarted,
         }
         return obj
     

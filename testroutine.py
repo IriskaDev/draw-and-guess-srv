@@ -139,8 +139,14 @@ async def test():
         'ANSWER': r0.answer
     })
 
+    await worker.quitroom(player0, {})
+    await worker.quitroom(player1, {})
+    await worker.quitroom(player3, {})
+    await worker.quitroom(viewer0, {})
+    
 
-    # await worker.getroomlist(player2, {})
+
+    await worker.getroomlist(player2, {})
     # printallclientinfo()
     # printallclientinfo()
 
