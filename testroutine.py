@@ -89,6 +89,9 @@ async def test():
         'PROTO': 'REQ_JOIN_RANDOM_ROOM',
     })
 
+    # await worker.joingame(viewer0, { 'PROTO': 'REQ_JOIN_GAME' })
+    # return
+
     await worker.onreadyforplay(player0, {'PROTO': 'REQ_READY_FOR_PLAY'})
     await worker.onreadyforplay(player1, {'PROTO': 'REQ_READY_FOR_PLAY'})
     await worker.oncancelready(player1, {'PROTO': 'REQ_CANCEL_PLAY'})
@@ -139,11 +142,10 @@ async def test():
         'ANSWER': r0.answer
     })
 
-    await worker.quitroom(player0, {})
-    await worker.quitroom(player1, {})
-    await worker.quitroom(player3, {})
-    await worker.quitroom(viewer0, {})
-    
+    # await worker.quitroom(player0, {})
+    # await worker.quitroom(player1, {})
+    # await worker.quitroom(player3, {})
+    # await worker.quitroom(viewer0, {})
 
 
     await worker.getroomlist(player2, {})

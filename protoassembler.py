@@ -66,6 +66,13 @@ def get_resp_join_room_as_viewer(errcode, roominfo=None):
     }
     return json.dumps(resp)
 
+def get_resp_join_game(errcode):
+    resp = {
+        'PROTO': 'RESP_JOIN_GAME',
+        'ERRCODE': errcode
+    }
+    return json.dumps(resp)
+
 def get_resp_ready_for_play(errcode):
     resp = {
         'PROTO': 'RESP_READY_FOR_PLAY',
@@ -172,6 +179,13 @@ def get_broadcast_viewer_joined(c):
     resp = {
         'PROTO': 'BROADCAST_VIEWER_JOINED',
         'VIEWER': c.getinfo(),
+    }
+    return json.dumps(resp)
+
+def get_broadcast_viewer_join_game(statinfo):
+    resp = {
+        'PROTO': 'BROADCAST_JOIN_GAME',
+        'PLAYERSTAT': statinfo
     }
     return json.dumps(resp)
 

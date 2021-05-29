@@ -10,7 +10,7 @@ import math
 import time
 import protoassembler
 from configmgr import configmgr
-from room import room
+from room import room, roomidgenerator
 from client import client
 from roommgr import roommgr
 from clientmgr import clientmgr
@@ -247,6 +247,31 @@ async def joinroom_asviewer(c, req):
     r.joinasviewer(c)
     await c.ws.send(protoassembler.get_resp_join_room_as_viewer(0, r.getroominfo()))
     await broadcastmsg(l, protoassembler.get_broadcast_viewer_joined(c))
+
+async def joingame(c, req):
+    if c.room is None:
+        await c.ws.send(protoassembler.get_resp_join_game(1))
+        return
+    if not roommgr().roomexists(c.room):
+        await c.ws.send(protoassembler.get_resp_join_game(2))
+        return
+    r = roommgr().getroom(c.room)
+    if r.isplayerfull():
+        await c.ws.send(protoassembler.get_resp_join_game(3))
+        return
+    if not r.clientisviewer(c):
+        await c.ws.send(protoassembler.get_resp_join_game(4))
+        return
+    if r.isinmatch():
+        await c.ws.send(protoassembler.get_resp_join_game(5))
+        return
+    
+    r.quitroom(c)
+    r.joinasplayer(c)
+    await c.ws.send(protoassembler.get_resp_join_game(0))
+    l = r.getbroadcastclientlist()
+    await broadcastmsg(l, protoassembler.get_broadcast_viewer_join_game(r.getplayerstat(c).getinfo()))
+
 
 async def onreadyforplay(c, req):
     if c.room is None:
@@ -511,6 +536,7 @@ HANDLERS = {
     'REQ_JOIN_RANDOM_ROOM':     joinrandomroom,
     'REQ_JOIN_ROOM_AS_PLAYER':  joinroom_asplayer,
     'REQ_JOIN_ROOM_AS_VIEWER':  joinroom_asviewer,
+    'REQ_JOIN_GAME':            joingame,
     'REQ_READY_FOR_PLAY':       onreadyforplay,
     'REQ_CANCEL_READY':         oncancelready,
     'REQ_START_ROUND':          startround,
