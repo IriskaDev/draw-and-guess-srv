@@ -81,6 +81,7 @@ async def test():
     await worker.quitroom(player2, {})
 
     player3 = worker.CLIENTS[wslist[4]]
+    viewer1 = worker.CLIENTS[wslist[5]]
     # await worker.joinroom_asplayer(player3, {
     #     'PROTO': 'REQ_JOIN_ROOM_AS_PLAYER',
     #     'ROOMID': "1000000"
@@ -133,6 +134,24 @@ async def test():
 
     await worker.skipround(player1, {'PROTO': 'REQ_SKIP_ROUND'})
     await worker.startround(player3, {'PROTO': 'REQ_START_ROUND'})
+
+    await worker.drawstart(player3, {'PROTO': 'REQ_DRAW_START'})
+    await worker.draw(player3, {'PROTO': 'REQ_DRAW', 'STEPS': [1]})
+    await worker.draw(player3, {'PROTO': 'REQ_DRAW', 'STEPS': [2]})
+    await worker.draw(player3, {'PROTO': 'REQ_DRAW', 'STEPS': [3,4,5]})
+    await worker.drawundo(player3, {})
+    await worker.drawundo(player3, {})
+    await worker.drawundo(player3, {})
+    await worker.drawundo(player3, {})
+    await worker.drawstart(player3, {})
+    await worker.draw(player3, {'PROTO': 'REQ_DRAW', 'STEPS': [1]})
+    await worker.drawstart(player3, {})
+    await worker.draw(player3, {'PROTO': 'REQ_DRAW', 'STEPS': [2]})
+    await worker.joinroom_asviewer(viewer1, {
+        'PROTO': 'REQ_JOIN_ROOM_AS_VIEWER',
+        'ROOMID': "1000000"
+    })
+    await worker.draw(player3, {'PROTO': 'REQ_DRAW', 'STEPS': [3,4,5]})
     await worker.send_answer(player1, {
         'PROTO': 'REQ_SEND_ANSWER',
         'ANSWER': r0.answer

@@ -523,8 +523,83 @@ async def send_answer(c, req):
         if r.isallplayercorrect():
             await processroundover(r)
 
+async def drawstart(c, req):
+    if c.room is None:
+        await c.ws.send(protoassembler.get_resp_draw_start(1))
+        return
+
+    if not roommgr().roomexists(c.room):
+        c.room = None
+        await c.ws.send(protoassembler.get_resp_draw_start(2))
+        return
+    
+    r = roommgr().getroom(c.room)
+    if not r.clientinroom(c) or not r.clientisdrawer(c):
+        await c.ws.send(protoassembler.get_resp_draw_start(3))
+        return
+
+    if not r.isinround():
+        await c.ws.send(protoassembler.get_resp_draw_start(4))
+        return
+    
+    r.gennewdrawobj()
+    l = r.getbroadcastclientlist()
+    await broadcastmsg(l, protoassembler.get_broadcast_draw_start())
+
 async def draw(c, req):
-    pass
+    if c.room is None:
+        await c.ws.send(protoassembler.get_resp_draw(1))
+        return
+
+    if not roommgr().roomexists(c.room):
+        c.room = None
+        await c.ws.send(protoassembler.get_resp_draw(2))
+        return
+
+    r = roommgr().getroom(c.room)
+    if not r.clientinroom(c) or not r.clientisdrawer(c):
+        await c.ws.send(protoassembler.get_resp_draw(3))
+        return
+
+    if not r.isinround():
+        await c.ws.send(protoassembler.get_resp_draw(4))
+        return
+    
+    if 'STEPS' not in req:
+        await c.ws.send(protoassembler.get_resp_draw(5))
+        return
+
+    steps = req['STEPS']
+    if type(steps) is not list:
+        await c.ws.send(protoassembler.get_resp_draw(6))
+        return
+    
+    r.draw(steps)
+    l = r.getbroadcastclientlist()
+    await broadcastmsg(l, protoassembler.get_broadcast_draw(steps))
+
+async def drawundo(c, req):
+    if c.room is None:
+        await c.ws.send(protoassembler.get_resp_draw_undo(1))
+        return
+
+    if not roommgr().roomexists(c.room):
+        c.room = None
+        await c.ws.send(protoassembler.get_resp_draw_undo(2))
+        return
+    
+    r = roommgr().getroom(c.room)
+    if not r.clientinroom(c) or not r.clientisdrawer(c):
+        await c.ws.send(protoassembler.get_resp_draw_undo(3))
+        return
+    
+    if not r.isinround():
+        await c.ws.send(protoassembler.get_resp_draw_undo(4))
+        return
+
+    r.undodraw()
+    l = r.getbroadcastclientlist()
+    await broadcastmsg(l, protoassembler.get_broadcast_draw_undo())
 
 async def heartbeat(c, req):
     await c.ws.send(protoassembler.get_resp_heartbeat())
@@ -544,7 +619,9 @@ HANDLERS = {
     'REQ_QUIT_ROOM':            quitroom,
     'REQ_SEND_CHAT':            send_chat,
     'REQ_SEND_ANSWER':          send_answer,
+    'REQ_DRAW_START':           drawstart,
     'REQ_DRAW':                 draw,
+    'REQ_DRAW_UNDO':            drawundo,
 
     'REQ_HEARTBEAT':            heartbeat,
 }

@@ -132,6 +132,27 @@ def get_resp_send_answer(errcode, iscorrect):
     }
     return json.dumps(resp)
 
+def get_resp_draw_start(errcode):
+    resp = {
+        'PROTO': 'RESP_DRAW_START',
+        'ERRCODE': errcode
+    }
+    return json.dumps(resp)
+
+def get_resp_draw(errcode):
+    resp = {
+        'PROTO': 'RESP_DRAW',
+        'ERRCODE': errcode
+    }
+    return json.dumps(resp)
+
+def get_resp_draw_undo(errcode):
+    resp = {
+        'PROTO': 'RESP_DRAW_UNDO',
+        'ERRCODE': errcode
+    }
+    return json.dumps(resp)
+
 def get_resp_heartbeat():
     return '{"PROTO": "RESP_HEARTBEAT"}'
 
@@ -252,6 +273,25 @@ def get_broadcast_match_over(rank):
     resp = {
         'PROTO': 'BROADCAST_MATCH_OVER',
         'RANK': rank
+    }
+    return json.dumps(resp)
+
+def get_broadcast_draw_start():
+    resp = {
+        'PROTO': 'BROADCAST_DRAW_START'
+    }
+    return json.dumps(resp)
+
+def get_broadcast_draw(steps):
+    resp = {
+        'PROTO': 'BROADCAST_DRAW',
+        'STEPS': steps
+    }
+    return json.dumps(resp)
+
+def get_broadcast_draw_undo():
+    resp = {
+        'PROTO': 'BROADCAST_DRAW_UNDO'
     }
     return json.dumps(resp)
 

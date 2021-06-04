@@ -199,9 +199,18 @@ class room:
         self.viewers.add(viewer)
         viewer.room = self.id
     
-    def gethistorydraws(self):
-        pass
+    def gennewdrawobj(self):
+        self.history.append([])
 
+    def draw(self, steps):
+        currentobj = self.history[len(self.history)-1]
+        currentobj.extend(steps)
+    
+    def undodraw(self):
+        if len(self.history) <= 0:
+            return
+        del self.history[-1]
+    
     def getanswer(self):
         return self.answer
 
@@ -270,7 +279,7 @@ class room:
                 'NAME': self.name,
                 'MATCHOVERSCORE': self.matchoverscore,
                 'PLAYERSTATS': self.getplayerinfolist(),
-                'HISTORYDRAWS': None,
+                'HISTORYDRAWS': self.history,
                 'ISINROUND': self.roundstarted,
                 'ISINMATCH': self.matchstarted,
                 'ROUNDINFO': self.getcurrentroundinfo(),
