@@ -25,6 +25,9 @@ class playerstatus:
         self.score = 0
         self.entertm = time.time()
 
+    def setscore(self, val):
+        self.score = val
+
     def setready(self, val):
         self.isready = val
     
@@ -109,6 +112,8 @@ class room:
 
     def matchstart(self):
         self.matchstarted = True
+        for _, player in self.players.items():
+            player.setscore(0)
     
     def gennewquestion(self):
         question, self.lastquestionidx = questionmgr().getrndquestion(self.lastquestionidx)
