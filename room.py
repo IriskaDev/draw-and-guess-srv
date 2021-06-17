@@ -112,6 +112,7 @@ class room:
 
     def matchstart(self):
         self.matchstarted = True
+        self.maxplayerscore = 0
         for _, player in self.players.items():
             player.setscore(0)
     
